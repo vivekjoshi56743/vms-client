@@ -1,0 +1,4163 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-mode="standard">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supervision — Visual Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS — Light mode (default)
+   ============================================================ */
+:root,
+[data-theme="light"] {
+  --canvas: #FAFAFA;
+  --canvas-raised: #FFFFFF;
+  --canvas-overlay: #FFFFFF;
+  --canvas-deep: #F4F4F5;
+
+  --surface: #F4F4F5;
+  --surface-hover: #EBEBEE;
+  --surface-active: #E1E1E5;
+  --surface-input: #FFFFFF;
+
+  --ink: #09090B;
+  --border: #E4E4E7;
+  --border-subtle: #F1F1F4;
+  --border-strong: #D4D4D8;
+  --border-focus: var(--accent);
+  --grid: #E4E4E7;
+
+  --text-primary: #09090B;
+  --text-secondary: #52525B;
+  --text-tertiary: #71717A;
+  --text-disabled: #A1A1AA;
+  --text-inverse: #FAFAFA;
+
+  --accent: #0891B2;
+  --accent-bright: #06B6D4;
+  --accent-hover: #0E7490;
+  --accent-active: #155E75;
+  --accent-subtle: #ECFEFF;
+  --accent-text: #0891B2;
+  --accent-on-accent: #FFFFFF;
+  --accent-glow: rgba(8, 145, 178, 0.20);
+
+  --status-online: #16A34A;
+  --status-online-glow: rgba(22, 163, 74, 0.28);
+  --status-online-subtle: #F0FDF4;
+  --status-warning: #CA8A04;
+  --status-warning-subtle: #FEFCE8;
+  --status-critical: #DC2626;
+  --status-critical-glow: rgba(220, 38, 38, 0.32);
+  --status-critical-subtle: #FEF2F2;
+  --status-offline: #71717A;
+  --status-offline-subtle: #F4F4F5;
+
+  --video-chrome-bg: rgba(10, 14, 19, 0.72);
+  --video-chrome-text: #F4F4F5;
+  --video-chrome-text-muted: rgba(244, 244, 245, 0.70);
+  --video-chrome-border: rgba(244, 244, 245, 0.12);
+  --video-online-dot: #22C55E;
+  --video-offline-dot: #EF4444;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.08);
+  --shadow-xl: 0 24px 48px rgba(0,0,0,0.12);
+
+  --backdrop: rgba(0,0,0,0.5);
+}
+
+/* Dark standard */
+[data-theme="dark"][data-mode="standard"] {
+  --canvas: #0A0E13;
+  --canvas-raised: #11161D;
+  --canvas-overlay: #161C24;
+  --canvas-deep: #07090C;
+
+  --surface: #1C232D;
+  --surface-hover: #242C38;
+  --surface-active: #2D3644;
+  --surface-input: #11161D;
+
+  --ink: #F4F4F5;
+  --border: #2A323D;
+  --border-subtle: #1F2530;
+  --border-strong: #3A4453;
+  --border-focus: var(--accent);
+  --grid: #1F2530;
+
+  --text-primary: #F4F4F5;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #71717A;
+  --text-disabled: #52525B;
+  --text-inverse: #09090B;
+
+  --accent: #06B6D4;
+  --accent-bright: #22D3EE;
+  --accent-hover: #22D3EE;
+  --accent-active: #0891B2;
+  --accent-subtle: #164E63;
+  --accent-text: #22D3EE;
+  --accent-on-accent: #0A0E13;
+  --accent-glow: rgba(34, 211, 238, 0.32);
+
+  --status-online: #22C55E;
+  --status-online-glow: rgba(34, 197, 94, 0.4);
+  --status-online-subtle: #14532D;
+  --status-warning: #EAB308;
+  --status-warning-subtle: #713F12;
+  --status-critical: #EF4444;
+  --status-critical-glow: rgba(239, 68, 68, 0.45);
+  --status-critical-subtle: #7F1D1D;
+  --status-offline: #71717A;
+  --status-offline-subtle: #27272A;
+
+  --video-chrome-bg: rgba(10, 14, 19, 0.72);
+  --video-chrome-text: #F4F4F5;
+  --video-chrome-text-muted: rgba(244, 244, 245, 0.70);
+  --video-chrome-border: rgba(244, 244, 245, 0.12);
+  --video-online-dot: #22C55E;
+  --video-offline-dot: #EF4444;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.6);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-lg: 0 24px 56px rgba(0,0,0,0.65);
+  --shadow-xl: 0 40px 80px rgba(0,0,0,0.7);
+
+  --backdrop: rgba(0,0,0,0.65);
+}
+
+/* Surveillance mode */
+[data-mode="surveillance"] {
+  --canvas: #000000;
+  --canvas-raised: #0A0E13;
+  --canvas-overlay: #11161D;
+  --canvas-deep: #000000;
+
+  --surface: #161C24;
+  --surface-hover: #1C232D;
+  --surface-active: #242C38;
+  --surface-input: #0A0E13;
+
+  --ink: #F4F4F5;
+  --border: #1C232D;
+  --border-subtle: #161C24;
+  --border-strong: #2A323D;
+  --border-focus: var(--accent);
+  --grid: #161C24;
+
+  --text-primary: #F4F4F5;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #71717A;
+  --text-disabled: #52525B;
+  --text-inverse: #09090B;
+
+  --accent: #06B6D4;
+  --accent-bright: #22D3EE;
+  --accent-hover: #22D3EE;
+  --accent-active: #0891B2;
+  --accent-subtle: #164E63;
+  --accent-text: #22D3EE;
+  --accent-on-accent: #0A0E13;
+  --accent-glow: rgba(34, 211, 238, 0.5);
+
+  --status-online: #22C55E;
+  --status-online-glow: rgba(34, 197, 94, 0.5);
+  --status-online-subtle: #14532D;
+  --status-warning: #EAB308;
+  --status-warning-subtle: #713F12;
+  --status-critical: #EF4444;
+  --status-critical-glow: rgba(239, 68, 68, 0.6);
+  --status-critical-subtle: #7F1D1D;
+  --status-offline: #71717A;
+  --status-offline-subtle: #27272A;
+
+  --video-chrome-bg: rgba(10, 14, 19, 0.72);
+  --video-chrome-text: #F4F4F5;
+  --video-chrome-text-muted: rgba(244, 244, 245, 0.70);
+  --video-chrome-border: rgba(244, 244, 245, 0.12);
+  --video-online-dot: #22C55E;
+  --video-offline-dot: #EF4444;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.6);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.6);
+  --shadow-lg: 0 24px 56px rgba(0,0,0,0.7);
+  --shadow-xl: 0 40px 80px rgba(0,0,0,0.7);
+
+  --backdrop: rgba(0,0,0,0.85);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background-color: var(--canvas);
+  background-image: radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 0);
+  background-size: 24px 24px;
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.005em;
+  transition: background-color 240ms cubic-bezier(0.2, 0, 0, 1), color 240ms cubic-bezier(0.2, 0, 0, 1);
+  padding-bottom: 48px;
+}
+::selection { background: var(--accent); color: var(--text-inverse); }
+
+/* ============================================================
+   DOC CHROME
+   ============================================================ */
+.doc-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.doc-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--canvas-raised);
+  border-right: 1px solid var(--border-subtle);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-block {
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+}
+.brand-block::before {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 24px;
+  right: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent) 50%, transparent);
+  opacity: 0.5;
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.brand-mark-glyph {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+}
+.brand-mark-glyph::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+.brand-mark-glyph::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  animation: brand-pulse 3s ease-in-out infinite;
+}
+@keyframes brand-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.15); }
+}
+
+.brand-meta {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.code-line {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.code-line .val { color: var(--text-secondary); }
+.code-line .val.accent { color: var(--accent); }
+
+.doc-nav { list-style: none; padding: 0; margin: 0; }
+
+.doc-nav-section {
+  padding: 18px 24px 8px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.doc-nav-section::before {
+  content: "";
+  width: 12px;
+  height: 1px;
+  background: var(--border-strong);
+}
+
+.doc-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 120ms, background 120ms;
+}
+.doc-nav-link .num {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+.doc-nav-link:hover {
+  color: var(--text-primary);
+  background: var(--surface);
+}
+.doc-nav-link:hover .num { color: var(--accent); }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.doc-main { min-width: 0; position: relative; }
+
+.doc-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 64px;
+  background: color-mix(in srgb, var(--canvas) 88%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid var(--border-subtle);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 0 40px;
+}
+.doc-topbar::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 40px;
+  width: 64px;
+  height: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.topbar-left .breadcrumb-chain { display: flex; align-items: center; gap: 8px; }
+.topbar-left .breadcrumb-chain .current { color: var(--text-primary); }
+.topbar-left .breadcrumb-chain .sep { color: var(--text-tertiary); }
+
+.topbar-tickers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+.topbar-tickers .ticker { display: flex; align-items: center; gap: 8px; }
+.topbar-tickers .label { color: var(--text-tertiary); }
+.topbar-tickers .val { color: var(--text-primary); }
+
+.live-pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-bright);
+  position: relative;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.live-pip::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-bright);
+  opacity: 0.5;
+  animation: live-breathe 1.8s ease-in-out infinite;
+}
+@keyframes live-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.7); opacity: 0; }
+}
+
+.doc-topbar-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: -0.01em;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  background: var(--canvas-raised);
+  border-radius: 4px;
+  padding: 3px;
+  gap: 0;
+  position: relative;
+}
+
+.mode-toggle button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 160ms;
+}
+.mode-toggle button:hover { color: var(--text-primary); }
+.mode-toggle button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--text-inverse);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15), inset 0 0 0 1px var(--ink);
+}
+
+.doc-content { padding: 0; max-width: none; }
+
+.doc-section {
+  padding: 80px 56px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+  scroll-margin-top: 80px;
+}
+.doc-section.hero {
+  padding: 96px 56px 80px;
+  background: linear-gradient(180deg, var(--canvas-raised) 0%, var(--canvas) 100%);
+}
+
+.section-marker {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+.section-num {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 96px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--text-tertiary);
+  position: relative;
+}
+.section-num::after {
+  content: "";
+  position: absolute;
+  bottom: 12px;
+  right: -10px;
+  width: 5px;
+  height: 5px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.section-title-block { flex: 1; padding-bottom: 16px; }
+
+.doc-section-header {
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.doc-section-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.doc-section-eyebrow::before {
+  content: "";
+  width: 18px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.doc-section-title {
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0 0 16px;
+  color: var(--text-primary);
+}
+.doc-section-title .period { color: var(--accent); }
+
+.doc-section-desc {
+  font-size: 17px;
+  line-height: 26px;
+  color: var(--text-secondary);
+  max-width: 680px;
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+
+.doc-subsection {
+  margin-bottom: 56px;
+}
+
+.doc-subsection-title {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.doc-subsection-title::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--accent);
+  border-radius: 1px;
+  display: inline-block;
+}
+
+.doc-subsection-desc {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-secondary);
+  margin: 0 0 20px;
+  max-width: 640px;
+}
+
+.doc-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.example-card {
+  background: var(--canvas-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 32px;
+  position: relative;
+}
+
+.example-card-tight {
+  background: var(--canvas-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.example-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.example-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.example-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.example-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* ============================================================
+   COLOR — swatches
+   ============================================================ */
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.swatch {
+  background: var(--canvas-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.swatch-color {
+  height: 64px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.swatch-meta {
+  padding: 10px 12px;
+}
+
+.swatch-name {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.swatch-value {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* ============================================================
+   TYPOGRAPHY scale
+   ============================================================ */
+.type-row {
+  display: grid;
+  grid-template-columns: 120px 80px 1fr;
+  gap: 24px;
+  align-items: baseline;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.type-row:last-child { border-bottom: 0; }
+
+.type-token {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--accent-text);
+}
+
+.type-meta {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.type-display { font-size: 40px; line-height: 48px; font-weight: 600; letter-spacing: -0.02em; }
+.type-title { font-size: 28px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em; }
+.type-h1 { font-size: 22px; line-height: 28px; font-weight: 600; }
+.type-h2 { font-size: 18px; line-height: 24px; font-weight: 600; }
+.type-h3 { font-size: 16px; line-height: 22px; font-weight: 600; }
+.type-body-lg { font-size: 15px; line-height: 22px; }
+.type-body { font-size: 14px; line-height: 20px; }
+.type-body-sm { font-size: 13px; line-height: 18px; }
+.type-caption { font-size: 12px; line-height: 16px; font-weight: 500; }
+.type-micro { font-size: 11px; line-height: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+
+.type-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.type-mono-lg { font-size: 20px; line-height: 28px; font-weight: 500; }
+.type-mono-md { font-size: 14px; line-height: 20px; }
+.type-mono-sm { font-size: 13px; line-height: 18px; }
+.type-mono-cap { font-size: 11px; line-height: 14px; font-weight: 500; }
+
+/* ============================================================
+   SPACING scale
+   ============================================================ */
+.spacing-row {
+  display: grid;
+  grid-template-columns: 80px 60px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.spacing-row:last-child { border-bottom: 0; }
+
+.spacing-token { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: 0.02em; }
+.spacing-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: var(--text-tertiary); }
+.spacing-bar {
+  background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+  height: 14px;
+  border-radius: 1px;
+  position: relative;
+}
+.spacing-bar::after {
+  content: "";
+  position: absolute;
+  right: -1px; top: -2px; bottom: -2px;
+  width: 1px;
+  background: var(--accent);
+}
+
+/* ============================================================
+   COMPONENTS — shared
+   ============================================================ */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 0 16px;
+  height: 36px;
+  cursor: pointer;
+  transition: all 120ms cubic-bezier(0.2, 0, 0, 1);
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--text-inverse);
+  border-color: var(--ink);
+}
+.btn-primary:hover {
+  background: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.btn-primary:active { transform: translateY(0); }
+
+.btn-accent {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+[data-theme="dark"] .btn-accent,
+[data-mode="surveillance"] .btn-accent { color: var(--canvas); }
+.btn-accent:hover {
+  background: var(--accent-bright);
+  border-color: var(--accent-bright);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+.btn-secondary {
+  background: var(--canvas-raised);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+.btn-secondary:hover { background: var(--surface); border-color: var(--border-strong); }
+.btn-secondary:active { background: var(--surface-active); }
+
+.btn-ghost { background: transparent; color: var(--text-primary); }
+.btn-ghost:hover { background: var(--surface); }
+.btn-ghost:active { background: var(--surface-active); }
+
+.btn-danger {
+  background: var(--status-critical);
+  color: white;
+  border-color: var(--status-critical);
+}
+.btn-danger:hover { filter: brightness(1.08); box-shadow: 0 0 0 4px var(--status-critical-glow); }
+.btn-danger:active { filter: brightness(0.94); }
+
+.btn-sm { height: 28px; padding: 0 12px; font-size: 13px; }
+.btn-lg { height: 44px; padding: 0 20px; font-size: 15px; }
+
+.btn-icon { width: 36px; padding: 0; }
+.btn-icon.btn-sm { width: 28px; }
+.btn-icon.btn-lg { width: 44px; }
+
+.btn[disabled], .btn[aria-disabled="true"] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.btn-spinner {
+  width: 14px; height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Inputs */
+.input {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  height: 36px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+  width: 100%;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.input:hover { border-color: var(--border-strong); }
+.input:focus,
+.input:focus-within {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.input::placeholder { color: var(--text-tertiary); }
+.input[disabled] { background: var(--surface); opacity: 0.5; }
+.input.error { border-color: var(--status-critical); }
+.input.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+.input-with-icon {
+  position: relative;
+  width: 100%;
+}
+.input-with-icon .input { padding-left: 36px; }
+.input-with-icon .input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.input-helper {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+.input-helper.error { color: var(--status-critical); }
+
+.input-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 7px;
+}
+
+.input-group { display: flex; flex-direction: column; gap: 0; }
+
+/* Select trigger (matches input visually) */
+.select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--surface-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  height: 36px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: border-color 120ms;
+}
+.select:hover { border-color: var(--border-strong); }
+
+/* Dropdown panel */
+.dropdown-panel {
+  background: var(--canvas-overlay);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  min-width: 200px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 3px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 80ms;
+}
+.dropdown-item:hover { background: var(--surface-hover); }
+.dropdown-item.selected { background: var(--accent-subtle); color: var(--accent-text); }
+.dropdown-item.danger { color: var(--status-critical); }
+.dropdown-item.danger:hover { background: var(--status-critical-subtle); }
+.dropdown-divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+
+/* Card */
+.card {
+  background: var(--canvas-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 16px;
+}
+.card-comfortable { padding: 24px; }
+.card-selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent-subtle) 30%, var(--canvas-raised)); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.card-title {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Stat readout — instrument display */
+.stat-readout {
+  background: var(--canvas-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-readout-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.stat-readout-val {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 56px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.stat-readout-val .unit {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  letter-spacing: 0;
+}
+.stat-readout-val.accent { color: var(--accent); }
+.stat-readout-val.critical { color: var(--status-critical); }
+.stat-readout-trend {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stat-readout-trend.positive { color: var(--status-online); }
+.stat-readout-trend.negative { color: var(--status-critical); }
+.stat-readout-trend.neutral { color: var(--text-tertiary); }
+
+/* Status badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge-online { background: var(--status-online-subtle); color: var(--status-online); }
+.badge-warning { background: var(--status-warning-subtle); color: var(--status-warning); }
+.badge-critical { background: var(--status-critical-subtle); color: var(--status-critical); }
+.badge-offline { background: var(--status-offline-subtle); color: var(--status-offline); }
+.badge-active { background: var(--accent-subtle); color: var(--accent); }
+
+.badge-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.badge-dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.badge-dot.online { color: var(--status-online); }
+.badge-dot.online::before { box-shadow: 0 0 8px var(--status-online-glow); }
+.badge-dot.warning { color: var(--status-warning); }
+.badge-dot.critical { color: var(--status-critical); }
+.badge-dot.critical::before {
+  box-shadow: 0 0 10px var(--status-critical-glow);
+  animation: critical-pulse 1.5s ease-in-out infinite;
+}
+@keyframes critical-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.badge-dot.offline { color: var(--status-offline); }
+.badge-dot .badge-dot-label { color: var(--text-primary); font-weight: 500; }
+
+/* Tag / chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+.chip.selected { background: var(--accent-subtle); border-color: transparent; color: var(--accent-text); }
+.chip-remove {
+  display: inline-flex;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+.chip-remove:hover { opacity: 1; }
+
+/* Table */
+.table-wrap {
+  background: var(--canvas-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table thead th {
+  background: var(--surface);
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  padding: 0 16px;
+  height: 40px;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+.table tbody td {
+  padding: 0 16px;
+  height: 48px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+.table tbody tr:last-child td { border-bottom: 0; }
+.table tbody tr:hover td { background: var(--surface-hover); }
+.table .num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; text-align: right; }
+.table .actions { text-align: right; white-space: nowrap; }
+.table th.sortable { cursor: pointer; }
+.table th.sortable:hover { color: var(--text-primary); }
+.table th.sorted .sort-icon { color: var(--accent); }
+.sort-icon { display: inline-block; vertical-align: middle; margin-left: 4px; color: var(--text-tertiary); }
+
+/* Toast */
+.toast {
+  display: flex;
+  gap: 12px;
+  background: var(--canvas-overlay);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 6px;
+  padding: 12px 16px;
+  box-shadow: var(--shadow-md);
+  min-width: 320px;
+  max-width: 420px;
+}
+.toast.info { border-left-color: var(--accent); }
+.toast.success { border-left-color: var(--status-online); }
+.toast.warning { border-left-color: var(--status-warning); }
+.toast.critical { border-left-color: var(--status-critical); }
+
+.toast-body { flex: 1; min-width: 0; }
+.toast-title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin: 0 0 2px; }
+.toast-desc { font-size: 13px; color: var(--text-secondary); margin: 0; }
+
+/* Modal demo */
+.modal-stage {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  height: 360px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--backdrop);
+}
+.modal {
+  position: relative;
+  background: var(--canvas-overlay);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  width: 560px;
+  max-width: 90%;
+}
+.modal-header {
+  padding: 24px 24px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.modal-title { font-size: 18px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.modal-body { padding: 8px 24px 24px; font-size: 15px; line-height: 22px; color: var(--text-secondary); }
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Sidebar nav demo */
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  background: var(--canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+  height: 480px;
+}
+.app-sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border-subtle);
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+}
+.app-sidebar-brand {
+  padding: 0 20px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 12px;
+}
+.app-sidebar-section {
+  padding: 12px 20px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+.app-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: background 100ms, color 100ms;
+}
+.app-nav-item:hover { background: var(--surface-hover); color: var(--text-primary); }
+.app-nav-item.active {
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+  font-weight: 500;
+}
+.app-nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--accent);
+}
+.app-nav-spacer { flex: 1; }
+.app-nav-bottom {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 8px;
+}
+
+.app-topbar {
+  height: 56px;
+  background: var(--canvas-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.app-content {
+  padding: 24px;
+  overflow: auto;
+  background: var(--canvas);
+}
+
+/* Video tile */
+.video-tile {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #04060A;
+  border-radius: 4px;
+  overflow: hidden;
+  color: #F4F4F5;
+  background-image:
+    linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,0.6) 100%),
+    radial-gradient(ellipse at 30% 40%, #2a3140 0%, #14181f 50%, #08090c 100%);
+}
+.video-tile.feed-warm {
+  background-image:
+    linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,0.6) 100%),
+    radial-gradient(ellipse at 60% 50%, #4a3d2e 0%, #2a221a 50%, #0a0905 100%);
+}
+.video-tile.feed-cool {
+  background-image:
+    linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,0.6) 100%),
+    radial-gradient(ellipse at 50% 60%, #1f3344 0%, #14202a 50%, #06080d 100%);
+}
+.video-tile.feed-night {
+  background-image:
+    linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,0.7) 100%),
+    radial-gradient(ellipse at 40% 70%, #2a3a4a 0%, #0e1820 50%, #02040a 100%);
+}
+.video-tile.feed-thermal {
+  background-image:
+    linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0) 65%, rgba(0,0,0,0.5) 100%),
+    radial-gradient(ellipse at 45% 55%, #5a2a3a 0%, #3a1822 35%, #1a0810 70%, #06020a 100%);
+}
+
+/* Subtle scan-line texture */
+.video-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    transparent 50%,
+    rgba(255,255,255,0.025) 50%,
+    rgba(255,255,255,0.025) 51%,
+    transparent 51%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* Corner registration marks */
+.video-corner-tl, .video-corner-tr, .video-corner-bl, .video-corner-br {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: rgba(244,244,245,0.4);
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: border-color 200ms, width 200ms, height 200ms;
+}
+.video-corner-tl { top: 6px; left: 6px; border-top-width: 1px; border-left-width: 1px; }
+.video-corner-tr { top: 6px; right: 6px; border-top-width: 1px; border-right-width: 1px; }
+.video-corner-bl { bottom: 6px; left: 6px; border-bottom-width: 1px; border-left-width: 1px; }
+.video-corner-br { bottom: 6px; right: 6px; border-bottom-width: 1px; border-right-width: 1px; }
+
+.video-tile.alerting .video-corner-tl,
+.video-tile.alerting .video-corner-tr,
+.video-tile.alerting .video-corner-bl,
+.video-tile.alerting .video-corner-br {
+  border-color: var(--status-critical);
+  width: 18px;
+  height: 18px;
+}
+
+.video-overlay-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 3;
+}
+
+.video-camera-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--video-chrome-bg);
+  border: 1px solid var(--video-chrome-border);
+  border-radius: 3px;
+  padding: 4px 9px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.video-camera-tag .dot, .video-camera-tag .live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  position: relative;
+}
+.video-camera-tag .dot.online, .video-camera-tag .live-dot {
+  background: var(--video-online-dot);
+  box-shadow: 0 0 8px var(--status-online-glow);
+}
+.video-camera-tag .live-dot.warn { background: var(--status-warning); box-shadow: 0 0 8px var(--status-warning-subtle); }
+.video-camera-tag .live-dot.alert {
+  background: var(--video-offline-dot);
+  box-shadow: 0 0 10px var(--status-critical-glow);
+  animation: critical-pulse 1.2s ease-in-out infinite;
+}
+.video-camera-tag .dot.offline { background: var(--video-offline-dot); }
+.video-camera-tag .name {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--video-chrome-text);
+}
+.video-camera-tag .site { color: var(--video-chrome-text-muted); font-size: 11.5px; }
+
+.video-timestamp {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--video-chrome-text-muted);
+  background: var(--video-chrome-bg);
+  padding: 4px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--video-chrome-border);
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.video-overlay-bottom {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 200ms, transform 200ms;
+  z-index: 3;
+}
+.video-tile:hover .video-overlay-bottom { opacity: 1; transform: translateY(0); }
+.video-tile.always-show-controls .video-overlay-bottom { opacity: 1; transform: translateY(0); }
+
+.video-controls {
+  display: flex;
+  gap: 4px;
+  background: var(--video-chrome-bg);
+  border: 1px solid var(--video-chrome-border);
+  border-radius: 3px;
+  padding: 4px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.video-control-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--video-chrome-text-muted);
+  width: 26px; height: 26px;
+  border-radius: 2px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-control-btn:hover { background: rgba(255,255,255,0.1); color: var(--video-chrome-text); }
+
+.video-meta-line {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--video-chrome-text-muted);
+  background: var(--video-chrome-bg);
+  padding: 4px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--video-chrome-border);
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.video-tile.alerting {
+  animation: alert-shadow 1.4s ease-in-out infinite;
+}
+@keyframes alert-shadow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--status-critical-glow), inset 0 0 0 2px var(--status-critical); }
+  50% { box-shadow: 0 0 0 6px transparent, inset 0 0 0 2px var(--status-critical); }
+}
+
+.video-tile.offline-state {
+  background-image: none;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+.video-tile.offline-state::after { display: none; }
+.video-tile.offline-state .icon { color: var(--text-tertiary); opacity: 0.5; }
+
+.video-tile.loading-state {
+  background: var(--surface);
+  background-image: linear-gradient(90deg,
+    var(--surface) 0%,
+    var(--surface-hover) 50%,
+    var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+.video-tile.loading-state::after { display: none; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* Tabs */
+.tabs {
+  display: inline-flex;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 0;
+}
+.tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-weight: 500;
+  transition: color 120ms, border-color 120ms;
+}
+.tab:hover { color: var(--text-primary); }
+.tab.active { color: var(--accent-text); border-bottom-color: var(--accent); }
+
+.segment {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.segment-item {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.segment-item:hover { color: var(--text-primary); }
+.segment-item.active {
+  background: var(--canvas-raised);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Toggle / switch */
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--border-strong);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 150ms;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.toggle.on { background: var(--accent); }
+.toggle.on::after { transform: translateX(16px); }
+
+/* Checkbox / radio */
+.check, .radio {
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface-input);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.check { border-radius: 3px; }
+.radio { border-radius: 50%; }
+
+.check.checked, .radio.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.check.checked::after {
+  content: "";
+  width: 9px; height: 5px;
+  border-left: 2px solid white;
+  border-bottom: 2px solid white;
+  transform: rotate(-45deg) translate(1px,-1px);
+}
+.radio.checked::after {
+  content: "";
+  width: 6px; height: 6px;
+  background: white;
+  border-radius: 50%;
+}
+
+.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* Tooltip */
+.tt-wrap { position: relative; display: inline-block; }
+.tt {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: var(--canvas);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.tt::after {
+  content: "";
+  position: absolute;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--text-primary);
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.breadcrumb-link { color: var(--text-secondary); text-decoration: none; }
+.breadcrumb-link:hover { color: var(--text-primary); }
+.breadcrumb-current { color: var(--text-primary); font-weight: 500; }
+.breadcrumb-sep { color: var(--text-tertiary); }
+
+/* Pagination */
+.pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.page-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-input);
+  color: var(--text-primary);
+  width: 32px; height: 32px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.page-btn:hover { background: var(--surface-hover); }
+.page-btn.active { background: var(--accent); color: var(--accent-on-accent); border-color: var(--accent); }
+
+/* Progress */
+.progress {
+  height: 6px;
+  background: var(--surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 240ms; }
+.progress.warning .progress-bar { background: var(--status-warning); }
+.progress.critical .progress-bar { background: var(--status-critical); }
+
+/* Avatar */
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.avatar-lg { width: 40px; height: 40px; font-size: 14px; }
+.avatar-cyan { background: var(--accent-subtle); color: var(--accent-text); }
+
+/* Empty state */
+.empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+}
+.empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+}
+.empty-title { font-size: 15px; font-weight: 500; color: var(--text-primary); margin: 0 0 4px; }
+.empty-desc { font-size: 13px; color: var(--text-secondary); margin: 0 auto 16px; max-width: 360px; }
+
+/* Skeleton */
+.sk {
+  background: linear-gradient(90deg,
+    var(--surface) 0%,
+    var(--surface-hover) 50%,
+    var(--surface) 100%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: shimmer 1.4s linear infinite;
+}
+.sk-line { height: 12px; }
+.sk-block { height: 80px; }
+
+/* Alert / inline */
+.alert {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 18px;
+}
+.alert-info { background: var(--accent-subtle); color: var(--accent-text); }
+.alert-warning { background: var(--status-warning-subtle); color: var(--status-warning); }
+.alert-critical { background: var(--status-critical-subtle); color: var(--status-critical); }
+.alert-icon { flex-shrink: 0; margin-top: 1px; }
+
+/* Iconography */
+.icon-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+.icon-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 90px;
+}
+.icon-cell .label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.icon-box {
+  width: 64px; height: 64px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface);
+  border-radius: 6px;
+  color: var(--text-primary);
+}
+
+/* Composition demo: dashboard fragment */
+.demo-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.metric-card {
+  background: var(--canvas-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 16px;
+}
+.metric-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.metric-value {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-top: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.metric-unit {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+.metric-delta {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.metric-delta.positive { color: var(--status-online); }
+.metric-delta.negative { color: var(--status-critical); }
+
+.demo-event-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--canvas-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+.event-thumb {
+  width: 56px; height: 32px;
+  background: linear-gradient(180deg, #2a3140 0%, #14181f 100%);
+  border-radius: 4px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.event-thumb::after {
+  content: "";
+  position: absolute;
+  top: 4px; left: 4px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: #EF4444;
+  box-shadow: 0 0 6px rgba(239,68,68,0.7);
+}
+.event-meta { min-width: 0; }
+.event-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin: 0; }
+.event-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.event-time { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: var(--text-tertiary); }
+
+/* Surveillance demo */
+.surveillance-stage {
+  background: #000;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 16px;
+  height: 540px;
+  position: relative;
+  overflow: hidden;
+}
+.surveillance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  height: 100%;
+}
+.surveillance-event-feed {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 280px;
+  max-height: 220px;
+  background: rgba(10, 14, 19, 0.85);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  backdrop-filter: blur(12px);
+  padding: 12px;
+}
+.sf-title {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(244,244,245,0.6);
+  margin-bottom: 8px;
+}
+.sf-event {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.sf-event:first-of-type { border-top: 0; }
+.sf-event-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #EF4444;
+  margin-top: 6px;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(239,68,68,0.6);
+}
+.sf-event-body { flex: 1; min-width: 0; }
+.sf-event-text { font-size: 12px; color: rgba(244,244,245,0.92); margin: 0; }
+.sf-event-meta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: rgba(244,244,245,0.5); margin-top: 2px; }
+
+.surveillance-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  background: rgba(7, 9, 12, 0.88);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 4px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 5;
+}
+.s-tool-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgba(244,244,245,0.7);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 120ms;
+}
+.s-tool-btn:hover { color: #fff; }
+.s-tool-btn.active {
+  background: rgba(6, 182, 212, 0.18);
+  color: #22D3EE;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+}
+
+/* Form layout */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Onboarding stepper */
+.stepper { display: flex; align-items: center; gap: 8px; }
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+.step.active .step-num { background: var(--accent); border-color: var(--accent); color: var(--accent-on-accent); }
+.step.active { color: var(--text-primary); font-weight: 500; }
+.step.complete .step-num { background: var(--accent-subtle); border-color: var(--accent-subtle); color: var(--accent-text); }
+.step-divider { width: 24px; height: 1px; background: var(--border); }
+
+/* Notes */
+.note {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 19px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+}
+
+/* Mode comparison */
+.mode-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+.mode-comparison-cell {
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+.mc-light, .mc-light * { color-scheme: light; }
+.mc-dark, .mc-dark * { color-scheme: dark; }
+
+/* Scoped previews — apply different mode tokens to a small region */
+.preview {
+  padding: 24px;
+  background-image: radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+.preview[data-preview="light"] {
+  --canvas: #FAFAFA; --canvas-raised: #FFFFFF; --surface: #F4F4F5; --surface-hover: #EBEBEE;
+  --border: #E4E4E7; --border-subtle: #F1F1F4; --border-strong: #D4D4D8;
+  --grid: #E4E4E7;
+  --text-primary: #09090B; --text-secondary: #52525B; --text-tertiary: #71717A;
+  --accent: #0891B2; --accent-bright: #06B6D4; --accent-subtle: #ECFEFF; --accent-glow: rgba(8, 145, 178, 0.20);
+  --status-online: #16A34A; --status-online-glow: rgba(22, 163, 74, 0.28); --status-online-subtle: #F0FDF4;
+  --status-critical: #DC2626; --status-critical-glow: rgba(220, 38, 38, 0.32); --status-critical-subtle: #FEF2F2;
+  background-color: var(--canvas);
+  color: var(--text-primary);
+}
+.preview[data-preview="dark"] {
+  --canvas: #0A0E13; --canvas-raised: #11161D; --surface: #1C232D; --surface-hover: #242C38;
+  --border: #2A323D; --border-subtle: #1F2530; --border-strong: #3A4453;
+  --grid: #1F2530;
+  --text-primary: #F4F4F5; --text-secondary: #A1A1AA; --text-tertiary: #71717A;
+  --accent: #06B6D4; --accent-bright: #22D3EE; --accent-subtle: #164E63; --accent-glow: rgba(34, 211, 238, 0.32);
+  --status-online: #22C55E; --status-online-glow: rgba(34, 197, 94, 0.4); --status-online-subtle: #14532D;
+  --status-critical: #EF4444; --status-critical-glow: rgba(239, 68, 68, 0.45); --status-critical-subtle: #7F1D1D;
+  background-color: var(--canvas);
+  color: var(--text-primary);
+}
+.preview[data-preview="surveillance"] {
+  --canvas: #000000; --canvas-raised: #0A0E13; --surface: #161C24; --surface-hover: #1C232D;
+  --border: #1C232D; --border-subtle: #161C24; --border-strong: #2A323D;
+  --grid: #161C24;
+  --text-primary: #F4F4F5; --text-secondary: #A1A1AA; --text-tertiary: #71717A;
+  --accent: #06B6D4; --accent-bright: #22D3EE; --accent-subtle: #164E63; --accent-glow: rgba(34, 211, 238, 0.5);
+  --status-online: #22C55E; --status-online-glow: rgba(34, 197, 94, 0.5); --status-online-subtle: #14532D;
+  --status-critical: #EF4444; --status-critical-glow: rgba(239, 68, 68, 0.6); --status-critical-subtle: #7F1D1D;
+  background-color: var(--canvas);
+  color: var(--text-primary);
+}
+
+.preview-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Utility */
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.row-tight { display: flex; gap: 6px; align-items: center; }
+.col { display: flex; flex-direction: column; gap: 12px; }
+.divider { height: 1px; background: var(--border-subtle); margin: 24px 0; }
+.muted { color: var(--text-secondary); }
+.tertiary { color: var(--text-tertiary); }
+.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+@media (max-width: 1100px) {
+  .doc-shell { grid-template-columns: 1fr; }
+  .doc-sidebar { display: none; }
+  .doc-content { padding: 32px 24px; }
+  .doc-section { padding: 56px 24px; }
+  .section-num { font-size: 64px; }
+  .doc-section-title { font-size: 40px; }
+  .topbar-tickers { display: none; }
+}
+
+/* SYSTEM STATUS BAR (footer) */
+.system-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background: var(--ink);
+  color: var(--text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  z-index: 100;
+}
+.system-bar-left, .system-bar-right { display: flex; align-items: center; gap: 18px; }
+.system-bar .item { display: flex; align-items: center; gap: 7px; }
+.system-bar .item .lbl { opacity: 0.5; }
+.system-bar .item .val { opacity: 1; }
+.system-bar .pip {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-bright);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+
+/* SECTION HELPERS — for compositions */
+.frame {
+  background: var(--canvas-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 32px;
+  position: relative;
+}
+.frame-tight { padding: 20px; }
+.frame-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.frame-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* Hero composition */
+.hero-frame {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 56px;
+  align-items: center;
+  margin-top: 48px;
+}
+.hero-display {
+  font-size: clamp(48px, 6vw, 84px);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  margin: 0 0 32px;
+}
+.hero-display .accent { color: var(--accent); }
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+  margin-top: 32px;
+}
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 24px;
+  border-right: 1px solid var(--border-subtle);
+}
+.hero-stat:last-child { border-right: 0; }
+.hero-stat-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.hero-stat-val {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.hero-stat-val .unit { font-size: 14px; color: var(--text-tertiary); margin-left: 4px; }
+.hero-tile-frame {
+  position: relative;
+  background: #000;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border);
+}
+
+/* Accent feature panel */
+.accent-feature {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+.accent-feature-main {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-active) 100%);
+  border-radius: 6px;
+  padding: 40px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+[data-theme="dark"] .accent-feature-main,
+[data-mode="surveillance"] .accent-feature-main {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-active) 100%);
+  color: var(--accent-on-accent);
+}
+.accent-feature-main::before {
+  content: "";
+  position: absolute;
+  top: 0; right: 0;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.18), transparent 60%);
+}
+.accent-feature-eye {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 16px;
+  position: relative;
+}
+.accent-feature-hex {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 56px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  margin: 0 0 8px;
+  line-height: 1;
+  position: relative;
+}
+.accent-feature-name { font-size: 16px; opacity: 0.9; position: relative; }
+.accent-feature-side {
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+}
+.accent-side-cell {
+  background: var(--canvas-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.accent-side-cell .swatch-dot {
+  width: 32px; height: 32px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* Stepper segment for onboarding etc */
+.tabs .count {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  background: var(--surface);
+  color: var(--text-tertiary);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.tab.active .count { background: var(--accent-subtle); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ICON SPRITE (Lucide-style) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+      <circle cx="12" cy="13" r="3"/>
+    </symbol>
+    <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>
+    </symbol>
+    <symbol id="i-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/>
+      <line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/>
+    </symbol>
+    <symbol id="i-hard-drive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" x2="2" y1="12" y2="12"/>
+      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/>
+      <line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/>
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+      <line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+    </symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+    </symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+    </symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+    </symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"/>
+    </symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"/>
+    </symbol>
+    <symbol id="i-chevron-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"/>
+    </symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+    </symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+    </symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/>
+      <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+    </symbol>
+    <symbol id="i-fullscreen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+      <path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+    </symbol>
+    <symbol id="i-cast" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 16.1A5 5 0 0 1 5.9 20"/><path d="M2 12.05A9 9 0 0 1 9.95 20"/>
+      <path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
+      <line x1="2" y1="20" x2="2.01" y2="20"/>
+    </symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </symbol>
+    <symbol id="i-camera-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="1" y1="1" x2="23" y2="23"/>
+      <path d="M21 21H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l3-3h6l1 1h2a2 2 0 0 1 2 2v11"/>
+      <path d="M14.121 15.121A3 3 0 1 1 9.88 10.88"/>
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- Icon helper macro (used inline) -->
+
+<div class="doc-shell">
+
+<aside class="doc-sidebar">
+  <div class="brand-block">
+    <div class="brand-mark">
+      <span class="brand-mark-glyph"></span>
+      Supervision
+    </div>
+    <div class="brand-meta">
+      <div class="code-line"><span>VISUAL.SYS</span><span class="val">v1.0.0</span></div>
+      <div class="code-line"><span>BUILD</span><span class="val">2026.05.05</span></div>
+      <div class="code-line"><span>STATUS</span><span class="val accent">DRAFT</span></div>
+    </div>
+  </div>
+  <nav>
+    <div class="doc-nav-section">Foundations</div>
+    <a class="doc-nav-link" href="#colors"><span class="num">01</span>Color</a>
+    <a class="doc-nav-link" href="#typography"><span class="num">02</span>Typography</a>
+    <a class="doc-nav-link" href="#spacing"><span class="num">03</span>Spacing</a>
+    <a class="doc-nav-link" href="#motion"><span class="num">04</span>Motion</a>
+    <a class="doc-nav-link" href="#icons"><span class="num">05</span>Iconography</a>
+
+    <div class="doc-nav-section">Components</div>
+    <a class="doc-nav-link" href="#buttons"><span class="num">06</span>Buttons</a>
+    <a class="doc-nav-link" href="#inputs"><span class="num">07</span>Inputs</a>
+    <a class="doc-nav-link" href="#selects"><span class="num">08</span>Selects &amp; Menus</a>
+    <a class="doc-nav-link" href="#controls"><span class="num">09</span>Controls</a>
+    <a class="doc-nav-link" href="#cards"><span class="num">10</span>Cards</a>
+    <a class="doc-nav-link" href="#tables"><span class="num">11</span>Tables</a>
+    <a class="doc-nav-link" href="#badges"><span class="num">12</span>Badges &amp; Tags</a>
+    <a class="doc-nav-link" href="#feedback"><span class="num">13</span>Feedback</a>
+    <a class="doc-nav-link" href="#nav"><span class="num">14</span>Navigation</a>
+    <a class="doc-nav-link" href="#empty"><span class="num">15</span>Empty &amp; Loading</a>
+    <a class="doc-nav-link" href="#video-tiles"><span class="num">16</span>Video Tiles</a>
+
+    <div class="doc-nav-section">Compositions</div>
+    <a class="doc-nav-link" href="#dashboard-comp"><span class="num">17</span>Dashboard</a>
+    <a class="doc-nav-link" href="#onboarding-comp"><span class="num">18</span>Onboarding</a>
+    <a class="doc-nav-link" href="#surveillance-comp"><span class="num">19</span>Surveillance</a>
+    <a class="doc-nav-link" href="#mode-comparison"><span class="num">20</span>Mode comparison</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="code-line"><span>SVN.VISUAL.V1</span><span class="val accent">●</span></div>
+  </div>
+</aside>
+
+<main class="doc-main">
+
+<div class="doc-topbar">
+  <div class="topbar-left">
+    <div class="breadcrumb-chain">
+      <span>SUPERVISION</span>
+      <span class="sep">/</span>
+      <span>DESIGN.SYS</span>
+      <span class="sep">/</span>
+      <span class="current">VISUAL</span>
+    </div>
+  </div>
+  <div class="topbar-tickers">
+    <div class="ticker"><span class="live-pip"></span><span class="val">LIVE</span></div>
+    <div class="ticker"><span class="label">VER</span><span class="val">1.0.0</span></div>
+    <div class="ticker"><span class="label">COMPONENTS</span><span class="val">47</span></div>
+    <div class="ticker"><span class="label">TOKENS</span><span class="val">82</span></div>
+  </div>
+  <div class="mode-toggle" role="tablist" aria-label="Display mode">
+    <button data-mode-set="light" aria-pressed="true">Light</button>
+    <button data-mode-set="dark">Dark</button>
+    <button data-mode-set="surveillance">Surv</button>
+  </div>
+</div>
+
+<div class="doc-content">
+
+<!-- HERO -->
+<section class="doc-section hero" id="intro">
+  <div class="doc-section-eyebrow">SVN · VISUAL DESIGN SYSTEM · V1</div>
+  <div class="hero-frame">
+    <div>
+      <h1 class="hero-display">A system for<br>watching<span class="accent">.</span></h1>
+      <p style="font-size:18px; line-height:1.5; color:var(--text-secondary); max-width:560px; margin:0 0 32px;">
+        Three modes. One language. Every primitive in this document is the source of truth for the Supervision client and server. Built for operators, designed like an instrument.
+      </p>
+
+      <div class="row" style="margin-bottom:32px">
+        <span class="chip mono">INTER · 400/500/600/700</span>
+        <span class="chip mono">JETBRAINS MONO</span>
+        <span class="chip mono">82 TOKENS</span>
+        <span class="chip mono">47 COMPONENTS</span>
+        <span class="chip mono">3 MODES</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-label">Spacing unit</span>
+          <span class="hero-stat-val">4<span class="unit">px</span></span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-label">Base radius</span>
+          <span class="hero-stat-val">4<span class="unit">px</span></span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-label">Accent</span>
+          <span class="hero-stat-val" style="color:var(--accent)">CYAN</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-tile-frame">
+      <div class="video-tile feed-cool always-show-controls" style="aspect-ratio:4/3">
+        <div class="video-corner-tl"></div>
+        <div class="video-corner-tr"></div>
+        <div class="video-corner-bl"></div>
+        <div class="video-corner-br"></div>
+        <div class="video-overlay-top">
+          <div class="video-camera-tag">
+            <span class="live-dot"></span>
+            <span class="name">CAM_03</span>
+            <span class="site">— Front entrance</span>
+          </div>
+          <span class="video-timestamp">14:22:08</span>
+        </div>
+        <div class="video-overlay-bottom">
+          <div class="video-meta-line">30 FPS · 4.2 MBPS · H.264</div>
+          <div class="video-controls">
+            <button class="video-control-btn"><svg width="14" height="14"><use href="#i-camera"/></svg></button>
+            <button class="video-control-btn"><svg width="14" height="14"><use href="#i-volume"/></svg></button>
+            <button class="video-control-btn"><svg width="14" height="14"><use href="#i-fullscreen"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COLORS -->
+<section class="doc-section" id="colors">
+  <div class="section-marker">
+    <div class="section-num">01</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.01 · FOUNDATIONS · COLOR</div>
+      <h2 class="doc-section-title">Color<span class="period">.</span></h2>
+      <p class="doc-section-desc">A grayscale UI with one signal color and three meaningful statuses. When something is cyan, it's live. When something is red, it really matters.</p>
+    </div>
+  </div>
+
+  <!-- Accent feature panel -->
+  <div class="doc-subsection" style="margin-top:32px">
+    <div class="frame-label">Signal · primary accent</div>
+    <div class="accent-feature">
+      <div class="accent-feature-main">
+        <div class="accent-feature-eye">SVN.color.accent · primary signal</div>
+        <h3 class="accent-feature-hex">#0891B2</h3>
+        <p class="accent-feature-name">Cyan — live indicators, active states, focus rings, primary signal.</p>
+      </div>
+      <div class="accent-feature-side">
+        <div class="accent-side-cell">
+          <div class="swatch-dot" style="background:var(--accent-bright)"></div>
+          <div>
+            <div class="swatch-name">--accent-bright</div>
+            <div class="swatch-value">#06B6D4 · used in dark</div>
+          </div>
+        </div>
+        <div class="accent-side-cell">
+          <div class="swatch-dot" style="background:var(--accent-active)"></div>
+          <div>
+            <div class="swatch-name">--accent-active</div>
+            <div class="swatch-value">pressed state</div>
+          </div>
+        </div>
+        <div class="accent-side-cell">
+          <div class="swatch-dot" style="background:var(--accent-subtle); border:1px solid var(--border-subtle)"></div>
+          <div>
+            <div class="swatch-name">--accent-subtle</div>
+            <div class="swatch-value">selected · backgrounds</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Canvas &amp; surface</h3>
+    <p class="doc-subsection-desc">The deepest backgrounds. Surveillance mode uses pure black for OLED contrast; standard dark mode never does — it stays on a graphite-leaning gray-black that feels like equipment.</p>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas)"></div><div class="swatch-meta"><div class="swatch-name">--canvas</div><div class="swatch-value">page background</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas-raised)"></div><div class="swatch-meta"><div class="swatch-name">--canvas-raised</div><div class="swatch-value">cards, panels</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas-overlay)"></div><div class="swatch-meta"><div class="swatch-name">--canvas-overlay</div><div class="swatch-value">modals, popovers</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--surface)"></div><div class="swatch-meta"><div class="swatch-name">--surface</div><div class="swatch-value">sidebars, secondary buttons</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--surface-hover)"></div><div class="swatch-meta"><div class="swatch-name">--surface-hover</div><div class="swatch-value">hover states</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--surface-active)"></div><div class="swatch-meta"><div class="swatch-name">--surface-active</div><div class="swatch-value">pressed states</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--surface-input);border-color:var(--border)"></div><div class="swatch-meta"><div class="swatch-name">--surface-input</div><div class="swatch-value">input fields</div></div></div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Border</h3>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas-raised);border-bottom:8px solid var(--border-subtle)"></div><div class="swatch-meta"><div class="swatch-name">--border-subtle</div><div class="swatch-value">card &amp; row separators</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas-raised);border-bottom:8px solid var(--border)"></div><div class="swatch-meta"><div class="swatch-name">--border</div><div class="swatch-value">default — inputs, buttons</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas-raised);border-bottom:8px solid var(--border-strong)"></div><div class="swatch-meta"><div class="swatch-name">--border-strong</div><div class="swatch-value">hover, emphasis</div></div></div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Text</h3>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas-raised);display:flex;align-items:center;justify-content:center;color:var(--text-primary);font-weight:600">Aa</div><div class="swatch-meta"><div class="swatch-name">--text-primary</div><div class="swatch-value">body, headings</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas-raised);display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-weight:600">Aa</div><div class="swatch-meta"><div class="swatch-name">--text-secondary</div><div class="swatch-value">supporting copy</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas-raised);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);font-weight:600">Aa</div><div class="swatch-meta"><div class="swatch-name">--text-tertiary</div><div class="swatch-value">labels, captions</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--canvas-raised);display:flex;align-items:center;justify-content:center;color:var(--text-disabled);font-weight:600">Aa</div><div class="swatch-meta"><div class="swatch-name">--text-disabled</div><div class="swatch-value">disabled state</div></div></div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Accent — cyan</h3>
+    <p class="doc-subsection-desc">A single saturated accent. Tunes between modes — deeper in light, brighter in dark — so it lands consistently against any canvas.</p>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-color" style="background:var(--accent)"></div><div class="swatch-meta"><div class="swatch-name">--accent</div><div class="swatch-value">primary buttons, focus</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--accent-hover)"></div><div class="swatch-meta"><div class="swatch-name">--accent-hover</div><div class="swatch-value">hover state</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--accent-active)"></div><div class="swatch-meta"><div class="swatch-name">--accent-active</div><div class="swatch-value">pressed state</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--accent-subtle)"></div><div class="swatch-meta"><div class="swatch-name">--accent-subtle</div><div class="swatch-value">selected nav, badges</div></div></div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Status</h3>
+    <p class="doc-subsection-desc">Used only for genuine status — never for decoration. Each status has a foreground (the saturated color) and a subtle (the soft background for badges).</p>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-color" style="background:var(--status-online)"></div><div class="swatch-meta"><div class="swatch-name">--status-online</div><div class="swatch-value">verified healthy</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--status-online-subtle)"></div><div class="swatch-meta"><div class="swatch-name">--status-online-subtle</div><div class="swatch-value">badge background</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--status-warning)"></div><div class="swatch-meta"><div class="swatch-name">--status-warning</div><div class="swatch-value">attention needed</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--status-warning-subtle)"></div><div class="swatch-meta"><div class="swatch-name">--status-warning-subtle</div><div class="swatch-value">badge background</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--status-critical)"></div><div class="swatch-meta"><div class="swatch-name">--status-critical</div><div class="swatch-value">offline, failure</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--status-critical-subtle)"></div><div class="swatch-meta"><div class="swatch-name">--status-critical-subtle</div><div class="swatch-value">badge background</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--status-offline)"></div><div class="swatch-meta"><div class="swatch-name">--status-offline</div><div class="swatch-value">unknown / inactive</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:var(--status-offline-subtle)"></div><div class="swatch-meta"><div class="swatch-name">--status-offline-subtle</div><div class="swatch-value">badge background</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TYPOGRAPHY -->
+<section class="doc-section" id="typography">
+  <div class="section-marker">
+    <div class="section-num">02</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.02 · FOUNDATIONS · TYPOGRAPHY</div>
+      <h2 class="doc-section-title">Typography<span class="period">.</span></h2>
+      <p class="doc-section-desc">Inter for UI. JetBrains Mono for any number that represents a measurement — IPs, FPS, timestamps, retention, uptime. The mono treatment does the most work for the precision aesthetic.</p>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Sans scale (Inter)</h3>
+    <div class="example-card">
+      <div class="type-row">
+        <span class="type-token">display</span>
+        <span class="type-meta">40 / 48 · 600</span>
+        <span class="type-display">Supervision</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">title</span>
+        <span class="type-meta">28 / 36 · 600</span>
+        <span class="type-title">Health Monitoring</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">heading-1</span>
+        <span class="type-meta">22 / 28 · 600</span>
+        <span class="type-h1">Recently triggered events</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">heading-2</span>
+        <span class="type-meta">18 / 24 · 600</span>
+        <span class="type-h2">Connected servers</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">heading-3</span>
+        <span class="type-meta">16 / 22 · 600</span>
+        <span class="type-h3">Camera 03 — Front entrance</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">body-lg</span>
+        <span class="type-meta">15 / 22 · 400</span>
+        <span class="type-body-lg">Add the cameras at this site. Supervision will discover Hikvision and Dahua devices automatically; switch to Pro mode to enter connection strings directly.</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">body</span>
+        <span class="type-meta">14 / 20 · 400</span>
+        <span class="type-body">Default UI text size. Used for table cells, form fields, navigation, and most labels in the application.</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">body-sm</span>
+        <span class="type-meta">13 / 18 · 400</span>
+        <span class="type-body-sm">Secondary information, helper text under inputs, smaller table cells, supplementary descriptions.</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">caption</span>
+        <span class="type-meta">12 / 16 · 500</span>
+        <span class="type-caption">Camera offline · 2 minutes ago</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">micro</span>
+        <span class="type-meta">11 / 14 · 500</span>
+        <span class="type-micro">Reserved · uppercase tracking</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Mono scale (JetBrains Mono)</h3>
+    <p class="doc-subsection-desc">Used for measurements, identifiers, and operational facts. Tabular figures are enabled so columns of numbers align.</p>
+    <div class="example-card">
+      <div class="type-row">
+        <span class="type-token">mono-lg</span>
+        <span class="type-meta">20 / 28 · 500</span>
+        <span class="type-mono type-mono-lg">2,847</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">mono</span>
+        <span class="type-meta">14 / 20 · 400</span>
+        <span class="type-mono type-mono-md">192.168.1.201:554</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">mono-sm</span>
+        <span class="type-meta">13 / 18 · 400</span>
+        <span class="type-mono type-mono-sm">/Streaming/Channels/101</span>
+      </div>
+      <div class="type-row">
+        <span class="type-token">mono-cap</span>
+        <span class="type-meta">11 / 14 · 500</span>
+        <span class="type-mono type-mono-cap">23:36:14 · 30 FPS · 4.2 Mbps</span>
+      </div>
+    </div>
+    <div class="note" style="margin-top:16px">
+      <strong>Decision rule:</strong> a number representing a measurement, identifier, or operational fact uses mono. A number in prose ("you have 3 cameras offline") uses Inter.
+    </div>
+  </div>
+</section>
+
+<!-- SPACING -->
+<section class="doc-section" id="spacing">
+  <div class="section-marker">
+    <div class="section-num">03</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.03 · FOUNDATIONS · SPACING</div>
+      <h2 class="doc-section-title">Spacing<span class="period">.</span></h2>
+      <p class="doc-section-desc">Built on a 4&nbsp;px unit. Everything is a multiple of 4. Designs that fall off the grid feel slightly wrong; staying on it feels right.</p>
+    </div>
+  </div>
+  <div class="example-card">
+    <div class="spacing-row"><span class="spacing-token">space-1</span><span class="spacing-value">4 px</span><div class="spacing-bar" style="width:4px"></div></div>
+    <div class="spacing-row"><span class="spacing-token">space-2</span><span class="spacing-value">8 px</span><div class="spacing-bar" style="width:8px"></div></div>
+    <div class="spacing-row"><span class="spacing-token">space-3</span><span class="spacing-value">12 px</span><div class="spacing-bar" style="width:12px"></div></div>
+    <div class="spacing-row"><span class="spacing-token">space-4</span><span class="spacing-value">16 px</span><div class="spacing-bar" style="width:16px"></div></div>
+    <div class="spacing-row"><span class="spacing-token">space-5</span><span class="spacing-value">20 px</span><div class="spacing-bar" style="width:20px"></div></div>
+    <div class="spacing-row"><span class="spacing-token">space-6</span><span class="spacing-value">24 px</span><div class="spacing-bar" style="width:24px"></div></div>
+    <div class="spacing-row"><span class="spacing-token">space-8</span><span class="spacing-value">32 px</span><div class="spacing-bar" style="width:32px"></div></div>
+    <div class="spacing-row"><span class="spacing-token">space-10</span><span class="spacing-value">40 px</span><div class="spacing-bar" style="width:40px"></div></div>
+    <div class="spacing-row"><span class="spacing-token">space-12</span><span class="spacing-value">48 px</span><div class="spacing-bar" style="width:48px"></div></div>
+    <div class="spacing-row"><span class="spacing-token">space-16</span><span class="spacing-value">64 px</span><div class="spacing-bar" style="width:64px"></div></div>
+  </div>
+</section>
+
+<!-- MOTION -->
+<section class="doc-section" id="motion">
+  <div class="section-marker">
+    <div class="section-num">04</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.04 · FOUNDATIONS · MOTION</div>
+      <h2 class="doc-section-title">Motion<span class="period">.</span></h2>
+      <p class="doc-section-desc">Functional, never expressive. Status changes are instant. Hover and focus animate at 120&nbsp;ms. Modals at 200&nbsp;ms. Surveillance entry takes 320&nbsp;ms — long enough to feel deliberate.</p>
+    </div>
+  </div>
+  <div class="example-card">
+    <div class="row" style="gap:24px">
+      <div>
+        <div class="example-label">120 ms · hover</div>
+        <button class="btn btn-secondary">Hover me</button>
+      </div>
+      <div>
+        <div class="example-label">200 ms · enter</div>
+        <button class="btn btn-primary" id="motion-modal-trigger">Open modal</button>
+      </div>
+      <div>
+        <div class="example-label">animated · alert</div>
+        <div class="video-tile feed-cool alerting" style="width:220px;aspect-ratio:16/9">
+          <div class="video-corner-tl"></div>
+          <div class="video-corner-tr"></div>
+          <div class="video-corner-bl"></div>
+          <div class="video-corner-br"></div>
+          <div class="video-overlay-top">
+            <div class="video-camera-tag"><span class="live-dot alert"></span><span class="name">CAM_03</span></div>
+            <span class="video-timestamp">14:22:08</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ICONS -->
+<section class="doc-section" id="icons">
+  <div class="section-marker">
+    <div class="section-num">05</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.05 · FOUNDATIONS · ICONOGRAPHY</div>
+      <h2 class="doc-section-title">Iconography<span class="period">.</span></h2>
+      <p class="doc-section-desc">Lucide outline icons. 1.5&nbsp;px stroke at 16&nbsp;px and above; 2&nbsp;px below. Color inherits from parent — accent only when active.</p>
+    </div>
+  </div>
+  <div class="example-card">
+    <div class="example-label">Sizes</div>
+    <div class="icon-grid" style="margin-bottom:32px">
+      <div class="icon-cell"><div class="icon-box"><svg width="14" height="14"><use href="#i-camera"/></svg></div><span class="label">14 px</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="16" height="16"><use href="#i-camera"/></svg></div><span class="label">16 px</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="18" height="18"><use href="#i-camera"/></svg></div><span class="label">18 px</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-camera"/></svg></div><span class="label">20 px</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="24" height="24"><use href="#i-camera"/></svg></div><span class="label">24 px</span></div>
+    </div>
+
+    <div class="example-label">Common icons</div>
+    <div class="icon-grid">
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-camera"/></svg></div><span class="label">camera</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-video"/></svg></div><span class="label">video</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-server"/></svg></div><span class="label">server</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-hard-drive"/></svg></div><span class="label">disk</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-shield"/></svg></div><span class="label">shield</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-eye"/></svg></div><span class="label">eye</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-bell"/></svg></div><span class="label">bell</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-monitor"/></svg></div><span class="label">monitor</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-settings"/></svg></div><span class="label">settings</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-users"/></svg></div><span class="label">users</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-grid"/></svg></div><span class="label">grid</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-clock"/></svg></div><span class="label">clock</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-search"/></svg></div><span class="label">search</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-file"/></svg></div><span class="label">file</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-download"/></svg></div><span class="label">download</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-cast"/></svg></div><span class="label">cast</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-fullscreen"/></svg></div><span class="label">fullscreen</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-alert"/></svg></div><span class="label">alert</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-check-circle"/></svg></div><span class="label">check</span></div>
+      <div class="icon-cell"><div class="icon-box"><svg width="20" height="20"><use href="#i-x-circle"/></svg></div><span class="label">x-circle</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- BUTTONS -->
+<section class="doc-section" id="buttons">
+  <div class="section-marker">
+    <div class="section-num">06</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.06 · COMPONENTS · BUTTONS</div>
+      <h2 class="doc-section-title">Buttons<span class="period">.</span></h2>
+      <p class="doc-section-desc">Five variants, three sizes. Primary is ink — high contrast. Cyan is reserved for the accent variant where the action itself is the signal (connect live, go live).</p>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Variants</h3>
+    <div class="example-card">
+      <div class="example-label">Default size · all variants</div>
+      <div class="row">
+        <button class="btn btn-primary"><svg width="14" height="14"><use href="#i-plus"/></svg> Add Camera</button>
+        <button class="btn btn-accent"><svg width="14" height="14"><use href="#i-zap"/></svg> Connect Live</button>
+        <button class="btn btn-secondary">Cancel</button>
+        <button class="btn btn-ghost">Skip</button>
+        <button class="btn btn-danger"><svg width="14" height="14"><use href="#i-trash"/></svg> Delete Server</button>
+        <button class="btn btn-secondary btn-icon" aria-label="Edit"><svg width="16" height="16"><use href="#i-edit"/></svg></button>
+        <button class="btn btn-ghost btn-icon" aria-label="More"><svg width="16" height="16"><use href="#i-more"/></svg></button>
+      </div>
+
+      <div style="margin-top:24px"></div>
+      <div class="example-label">Sizes — small · default · large</div>
+      <div class="row">
+        <button class="btn btn-primary btn-sm">Connect</button>
+        <button class="btn btn-primary">Connect</button>
+        <button class="btn btn-primary btn-lg">Connect</button>
+      </div>
+
+      <div style="margin-top:24px"></div>
+      <div class="example-label">States</div>
+      <div class="row">
+        <button class="btn btn-primary">Default</button>
+        <button class="btn btn-primary" style="background:var(--accent-hover)">Hover</button>
+        <button class="btn btn-primary" style="background:var(--accent-active)">Active</button>
+        <button class="btn btn-primary" disabled>Disabled</button>
+        <button class="btn btn-primary"><span class="btn-spinner"></span> Connecting…</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INPUTS -->
+<section class="doc-section" id="inputs">
+  <div class="section-marker">
+    <div class="section-num">07</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.07 · COMPONENTS · INPUTS</div>
+      <h2 class="doc-section-title">Inputs<span class="period">.</span></h2>
+      <p class="doc-section-desc">Numeric, IP, and port fields use mono. Labels are uppercase mono — equipment-style. Focus is a 3&nbsp;px cyan ring.</p>
+    </div>
+  </div>
+
+  <div class="example-card">
+    <div class="form-grid cols-3">
+      <div>
+        <label class="input-label">Camera name</label>
+        <input class="input" placeholder="Front entrance" value="Main entrance — bay 4">
+        <div class="input-helper">Shown across all views.</div>
+      </div>
+      <div>
+        <label class="input-label">IP address</label>
+        <input class="input mono" placeholder="192.168.1.100" value="192.168.1.201">
+        <div class="input-helper mono">tcp · port 554</div>
+      </div>
+      <div>
+        <label class="input-label">Port</label>
+        <input class="input mono" value="554">
+      </div>
+
+      <div>
+        <label class="input-label">Search cameras</label>
+        <div class="input-with-icon">
+          <span class="input-icon"><svg width="16" height="16"><use href="#i-search"/></svg></span>
+          <input class="input" placeholder="Search by name, IP, or site…">
+        </div>
+      </div>
+      <div>
+        <label class="input-label">Stream URL</label>
+        <input class="input mono" value="rtsp://admin:•••@192.168.1.201:554/Streaming/Channels/101">
+      </div>
+      <div>
+        <label class="input-label">Frame rate</label>
+        <button class="select"><span>30 FPS</span><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-chevron-down"/></svg></button>
+      </div>
+
+      <div>
+        <label class="input-label">Server hostname</label>
+        <input class="input" placeholder="server.local or IP" value="warehouse-server.acme.local">
+      </div>
+      <div>
+        <label class="input-label">Username</label>
+        <input class="input" value="admin">
+      </div>
+      <div>
+        <label class="input-label">Password</label>
+        <input class="input mono" type="password" value="••••••••••••">
+      </div>
+
+      <div>
+        <label class="input-label">Connection mode</label>
+        <input class="input" value="WebRTC (auto)" disabled>
+      </div>
+      <div>
+        <label class="input-label">Server fingerprint</label>
+        <input class="input mono" value="SHA256:fGv2..3kpL" disabled>
+      </div>
+      <div>
+        <label class="input-label">Validation error</label>
+        <input class="input mono error" value="rtsp://10.0.0.1">
+        <div class="input-helper error">Stream URL is missing a port. Expected format: <span class="mono">rtsp://host:port/path</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SELECTS & MENUS -->
+<section class="doc-section" id="selects">
+  <div class="section-marker">
+    <div class="section-num">08</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.08 · COMPONENTS · SELECTS &amp; MENUS</div>
+      <h2 class="doc-section-title">Selects &amp; Menus<span class="period">.</span></h2>
+      <p class="doc-section-desc">Dropdown panels share canvas-overlay surface and 6&nbsp;px corners. Selected items use accent-subtle.</p>
+    </div>
+  </div>
+
+  <div class="example-card">
+    <div class="row" style="align-items:flex-start; gap:32px">
+      <div style="flex:1; min-width:240px">
+        <label class="input-label">Recording schedule</label>
+        <button class="select"><span>Business hours · Mon–Fri 08:00–18:00</span><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-chevron-down"/></svg></button>
+        <div class="input-helper">Camera will only record during these hours.</div>
+      </div>
+
+      <div>
+        <div class="example-label">Open dropdown</div>
+        <div class="dropdown-panel" style="width:240px">
+          <div class="dropdown-item">24/7 recording</div>
+          <div class="dropdown-item selected">
+            <svg width="14" height="14"><use href="#i-check-circle"/></svg>
+            Business hours
+          </div>
+          <div class="dropdown-item">Motion-only</div>
+          <div class="dropdown-item">Custom schedule…</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item danger">
+            <svg width="14" height="14"><use href="#i-trash"/></svg>
+            Stop recording
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="example-label">Context menu</div>
+        <div class="dropdown-panel" style="width:200px">
+          <div class="dropdown-item"><svg width="14" height="14"><use href="#i-eye"/></svg> View live</div>
+          <div class="dropdown-item"><svg width="14" height="14"><use href="#i-clock"/></svg> Open playback</div>
+          <div class="dropdown-item"><svg width="14" height="14"><use href="#i-edit"/></svg> Edit camera</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item danger"><svg width="14" height="14"><use href="#i-trash"/></svg> Remove</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTROLS (toggle, checkbox, radio, segment) -->
+<section class="doc-section" id="controls">
+  <div class="section-marker">
+    <div class="section-num">09</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.09 · COMPONENTS · CONTROLS</div>
+      <h2 class="doc-section-title">Controls<span class="period">.</span></h2>
+      <p class="doc-section-desc">Toggles, checkboxes, radios, segmented controls. Used in settings, filters, schedule pickers, and onboarding.</p>
+    </div>
+  </div>
+
+  <div class="example-card">
+    <div class="example-label">Toggle</div>
+    <div class="row" style="margin-bottom:32px">
+      <div class="check-row"><span class="toggle on" role="switch" aria-checked="true"></span> Enable recording on this camera</div>
+      <div class="check-row"><span class="toggle" role="switch" aria-checked="false"></span> Send email alerts</div>
+    </div>
+
+    <div class="example-label">Checkbox</div>
+    <div class="example-stack" style="margin-bottom:32px">
+      <label class="check-row"><span class="check checked"></span> Person detection</label>
+      <label class="check-row"><span class="check checked"></span> Vehicle detection</label>
+      <label class="check-row"><span class="check"></span> Line crossing</label>
+      <label class="check-row"><span class="check"></span> Audio detection</label>
+    </div>
+
+    <div class="example-label">Radio</div>
+    <div class="example-stack" style="margin-bottom:32px">
+      <label class="check-row"><span class="radio checked"></span> Server + Client (full installation)</label>
+      <label class="check-row"><span class="radio"></span> Client only (connect to remote servers)</label>
+    </div>
+
+    <div class="example-label">Segmented control</div>
+    <div class="row">
+      <div class="segment">
+        <div class="segment-item active">1×1</div>
+        <div class="segment-item">2×2</div>
+        <div class="segment-item">3×3</div>
+        <div class="segment-item">4×4</div>
+        <div class="segment-item">5×5</div>
+      </div>
+      <div class="segment">
+        <div class="segment-item active">Live</div>
+        <div class="segment-item">Playback</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CARDS -->
+<section class="doc-section" id="cards">
+  <div class="section-marker">
+    <div class="section-num">10</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.10 · COMPONENTS · CARDS &amp; READOUTS</div>
+      <h2 class="doc-section-title">Cards &amp; Readouts<span class="period">.</span></h2>
+      <p class="doc-section-desc">Cards carry elevation through borders, not shadows. Stat readouts use big mono numbers — instrument displays, not decoration.</p>
+    </div>
+  </div>
+
+  <div class="doc-subsection" style="margin-top:32px">
+    <h3 class="doc-subsection-title">Stat readouts — instrument displays</h3>
+    <div class="doc-grid" style="grid-template-columns:repeat(4, 1fr); gap:12px">
+      <div class="stat-readout">
+        <div class="stat-readout-eyebrow">
+          <span>Online cameras</span>
+          <svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg>
+        </div>
+        <div class="stat-readout-val">42<span class="unit">/ 47</span></div>
+        <div class="stat-readout-trend positive">▲ +2 since yesterday</div>
+      </div>
+      <div class="stat-readout">
+        <div class="stat-readout-eyebrow">
+          <span>Recording</span>
+          <svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-video"/></svg>
+        </div>
+        <div class="stat-readout-val">38</div>
+        <div class="stat-readout-trend neutral">9 paused · biz hours</div>
+      </div>
+      <div class="stat-readout">
+        <div class="stat-readout-eyebrow">
+          <span>Storage free</span>
+          <svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-hard-drive"/></svg>
+        </div>
+        <div class="stat-readout-val">12.4<span class="unit">TB</span></div>
+        <div class="stat-readout-trend neutral">avg 24-day retention</div>
+      </div>
+      <div class="stat-readout">
+        <div class="stat-readout-eyebrow">
+          <span>Open alerts</span>
+          <svg width="14" height="14" style="color:var(--status-critical)"><use href="#i-alert"/></svg>
+        </div>
+        <div class="stat-readout-val critical">2</div>
+        <div class="stat-readout-trend negative">▼ 1 critical · 1 warn</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-grid" style="grid-template-columns:repeat(3, 1fr)">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Disk usage</div>
+        <button class="btn btn-ghost btn-icon btn-sm" aria-label="More"><svg width="14" height="14"><use href="#i-more"/></svg></button>
+      </div>
+      <div class="metric-value">67<span class="metric-unit">%</span></div>
+      <div class="progress" style="margin-top:8px"><div class="progress-bar" style="width:67%"></div></div>
+      <div class="metric-delta tertiary" style="margin-top:8px">2.6 TB free of 8 TB · 18 days retention</div>
+    </div>
+
+    <div class="card card-selected">
+      <div class="card-header">
+        <div class="row-tight">
+          <svg width="16" height="16" style="color:var(--accent)"><use href="#i-server"/></svg>
+          <div class="card-title">Warehouse Server</div>
+        </div>
+        <span class="badge badge-online"><svg width="10" height="10"><use href="#i-check-circle"/></svg> Online</span>
+      </div>
+      <div class="row" style="gap:16px; font-size:13px; color:var(--text-secondary)">
+        <span class="mono">10.0.4.12</span>
+        <span>·</span>
+        <span>16 cameras</span>
+        <span>·</span>
+        <span>uptime <span class="mono">42d 11h</span></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-eyebrow">Recent incidents</div>
+        <a href="#" style="font-size:12px; color:var(--accent-text); text-decoration:none">View all →</a>
+      </div>
+      <div class="example-stack" style="gap:8px">
+        <div class="row" style="font-size:13px"><span class="badge-dot critical"><span class="badge-dot-label">Theft — bay 4</span></span> <span class="mono tertiary" style="margin-left:auto;font-size:12px">12:48</span></div>
+        <div class="row" style="font-size:13px"><span class="badge-dot warning"><span class="badge-dot-label">Loitering — back door</span></span> <span class="mono tertiary" style="margin-left:auto;font-size:12px">11:22</span></div>
+        <div class="row" style="font-size:13px"><span class="badge-dot online"><span class="badge-dot-label">Cleared — bay 2</span></span> <span class="mono tertiary" style="margin-left:auto;font-size:12px">09:14</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TABLES -->
+<section class="doc-section" id="tables">
+  <div class="section-marker">
+    <div class="section-num">11</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.11 · COMPONENTS · TABLES</div>
+      <h2 class="doc-section-title">Tables<span class="period">.</span></h2>
+      <p class="doc-section-desc">The workhorse of admin views. Numeric cells use mono with tabular figures, right-aligned. Headers are uppercase mono — equipment-style.</p>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="sortable sorted">Camera <span class="sort-icon"><svg width="12" height="12"><use href="#i-chevron-down"/></svg></span></th>
+          <th>Site</th>
+          <th>IP address</th>
+          <th class="num">FPS</th>
+          <th class="num">Bitrate</th>
+          <th>Recording</th>
+          <th>Status</th>
+          <th class="actions">&nbsp;</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="row-tight"><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg> Front entrance</div></td>
+          <td>Main warehouse</td>
+          <td class="num">192.168.1.201</td>
+          <td class="num">30</td>
+          <td class="num">4.2 Mbps</td>
+          <td><span class="badge badge-active">24/7</span></td>
+          <td><span class="badge-dot online"><span class="badge-dot-label">Online</span></span></td>
+          <td class="actions">
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="Edit"><svg width="14" height="14"><use href="#i-edit"/></svg></button>
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="More"><svg width="14" height="14"><use href="#i-more"/></svg></button>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="row-tight"><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg> Loading dock A</div></td>
+          <td>Main warehouse</td>
+          <td class="num">192.168.1.202</td>
+          <td class="num">25</td>
+          <td class="num">3.8 Mbps</td>
+          <td><span class="badge badge-active">Business hrs</span></td>
+          <td><span class="badge-dot online"><span class="badge-dot-label">Online</span></span></td>
+          <td class="actions">
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="Edit"><svg width="14" height="14"><use href="#i-edit"/></svg></button>
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="More"><svg width="14" height="14"><use href="#i-more"/></svg></button>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="row-tight"><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg> Loading dock B</div></td>
+          <td>Main warehouse</td>
+          <td class="num">192.168.1.203</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td><span class="badge badge-offline">Stopped</span></td>
+          <td><span class="badge-dot critical"><span class="badge-dot-label">Offline · 2m</span></span></td>
+          <td class="actions">
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="Edit"><svg width="14" height="14"><use href="#i-edit"/></svg></button>
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="More"><svg width="14" height="14"><use href="#i-more"/></svg></button>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="row-tight"><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg> Aisle 7 — south</div></td>
+          <td>Main warehouse</td>
+          <td class="num">192.168.1.214</td>
+          <td class="num">15</td>
+          <td class="num">2.1 Mbps</td>
+          <td><span class="badge badge-warning">Low FPS</span></td>
+          <td><span class="badge-dot warning"><span class="badge-dot-label">Degraded</span></span></td>
+          <td class="actions">
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="Edit"><svg width="14" height="14"><use href="#i-edit"/></svg></button>
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="More"><svg width="14" height="14"><use href="#i-more"/></svg></button>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="row-tight"><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg> Cold storage</div></td>
+          <td>Cold annex</td>
+          <td class="num">10.0.4.42</td>
+          <td class="num">30</td>
+          <td class="num">5.6 Mbps</td>
+          <td><span class="badge badge-active">24/7</span></td>
+          <td><span class="badge-dot online"><span class="badge-dot-label">Online</span></span></td>
+          <td class="actions">
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="Edit"><svg width="14" height="14"><use href="#i-edit"/></svg></button>
+            <button class="btn btn-ghost btn-icon btn-sm" aria-label="More"><svg width="14" height="14"><use href="#i-more"/></svg></button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="row" style="margin-top:16px; justify-content:space-between">
+    <div class="muted" style="font-size:13px">Showing 5 of 23 cameras</div>
+    <div class="pagination">
+      <button class="page-btn">‹</button>
+      <button class="page-btn active">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <button class="page-btn">4</button>
+      <button class="page-btn">5</button>
+      <button class="page-btn">›</button>
+    </div>
+  </div>
+</section>
+
+<!-- BADGES & TAGS -->
+<section class="doc-section" id="badges">
+  <div class="section-marker">
+    <div class="section-num">12</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.12 · COMPONENTS · BADGES &amp; TAGS</div>
+      <h2 class="doc-section-title">Badges &amp; Tags<span class="period">.</span></h2>
+      <p class="doc-section-desc">Status badges convey meaning at a glance. Two treatments: filled mono pill (in tables, cards) and dot-with-label (in compact contexts).</p>
+    </div>
+  </div>
+
+  <div class="example-card">
+    <div class="example-label">Status badges (filled)</div>
+    <div class="row" style="margin-bottom:32px">
+      <span class="badge badge-online"><svg width="10" height="10"><use href="#i-check-circle"/></svg> Online</span>
+      <span class="badge badge-warning"><svg width="10" height="10"><use href="#i-alert"/></svg> Degraded</span>
+      <span class="badge badge-critical"><svg width="10" height="10"><use href="#i-x-circle"/></svg> Offline · 2m</span>
+      <span class="badge badge-offline">Stopped</span>
+      <span class="badge badge-active">Recording</span>
+      <span class="badge badge-active">24/7</span>
+    </div>
+
+    <div class="example-label">Status dots (compact)</div>
+    <div class="row" style="margin-bottom:32px">
+      <span class="badge-dot online"><span class="badge-dot-label">Online</span></span>
+      <span class="badge-dot warning"><span class="badge-dot-label">Degraded</span></span>
+      <span class="badge-dot critical"><span class="badge-dot-label">Offline</span></span>
+      <span class="badge-dot offline"><span class="badge-dot-label">Unknown</span></span>
+    </div>
+
+    <div class="example-label">Tags / chips</div>
+    <div class="row">
+      <span class="chip">Hikvision</span>
+      <span class="chip">Dahua</span>
+      <span class="chip">ONVIF</span>
+      <span class="chip selected">PTZ <svg class="chip-remove" width="10" height="10"><use href="#i-x"/></svg></span>
+      <span class="chip">Outdoor</span>
+      <span class="chip selected">AI-capable <svg class="chip-remove" width="10" height="10"><use href="#i-x"/></svg></span>
+    </div>
+  </div>
+</section>
+
+<!-- FEEDBACK (toasts, alerts, modals) -->
+<section class="doc-section" id="feedback">
+  <div class="section-marker">
+    <div class="section-num">13</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.13 · COMPONENTS · FEEDBACK</div>
+      <h2 class="doc-section-title">Feedback<span class="period">.</span></h2>
+      <p class="doc-section-desc">Toasts, alerts, modals, tooltips. Critical toasts do not auto-dismiss; the operator must acknowledge them.</p>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Toasts</h3>
+    <div class="example-card">
+      <div class="col" style="gap:12px">
+        <div class="toast info">
+          <svg width="18" height="18" style="color:var(--accent)"><use href="#i-info"/></svg>
+          <div class="toast-body">
+            <p class="toast-title">Server connection saved</p>
+            <p class="toast-desc">Warehouse Server is now visible in your client.</p>
+          </div>
+          <button class="btn btn-ghost btn-icon btn-sm" aria-label="Close"><svg width="14" height="14"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="toast success">
+          <svg width="18" height="18" style="color:var(--status-online)"><use href="#i-check-circle"/></svg>
+          <div class="toast-body">
+            <p class="toast-title">Incident exported</p>
+            <p class="toast-desc">incident-0247.zip · 84.2 MB · saved to Downloads</p>
+          </div>
+          <button class="btn btn-ghost btn-icon btn-sm" aria-label="Close"><svg width="14" height="14"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="toast warning">
+          <svg width="18" height="18" style="color:var(--status-warning)"><use href="#i-alert"/></svg>
+          <div class="toast-body">
+            <p class="toast-title">Low retention warning</p>
+            <p class="toast-desc">Cold storage server has 6 days of recording remaining at current rate.</p>
+          </div>
+          <button class="btn btn-ghost btn-icon btn-sm" aria-label="Close"><svg width="14" height="14"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="toast critical">
+          <svg width="18" height="18" style="color:var(--status-critical)"><use href="#i-x-circle"/></svg>
+          <div class="toast-body">
+            <p class="toast-title">Disk SMART failure detected</p>
+            <p class="toast-desc">Warehouse Server · /dev/sdb · replace immediately to prevent data loss.</p>
+          </div>
+          <button class="btn btn-ghost btn-icon btn-sm" aria-label="Close"><svg width="14" height="14"><use href="#i-x"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Inline alerts</h3>
+    <div class="example-card">
+      <div class="col">
+        <div class="alert alert-info">
+          <svg class="alert-icon" width="16" height="16"><use href="#i-info"/></svg>
+          <div>This camera doesn't support on-board AI analytics. Person and vehicle detection are not available; motion and tampering events are still captured. <a href="#" style="color:inherit; font-weight:500">Learn more →</a></div>
+        </div>
+        <div class="alert alert-warning">
+          <svg class="alert-icon" width="16" height="16"><use href="#i-alert"/></svg>
+          <div>Server fingerprint has changed since last connection. This may indicate a server reinstall or a man-in-the-middle attack. Verify before continuing.</div>
+        </div>
+        <div class="alert alert-critical">
+          <svg class="alert-icon" width="16" height="16"><use href="#i-x-circle"/></svg>
+          <div>Cannot reach <span class="mono">10.0.4.12</span>. The server may be offline or unreachable from this network.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Modal</h3>
+    <div class="modal-stage">
+      <div class="modal">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">Trust this server?</h3>
+          </div>
+          <button class="btn btn-ghost btn-icon btn-sm" aria-label="Close"><svg width="14" height="14"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="modal-body">
+          You're connecting to <strong style="color:var(--text-primary)">warehouse-server.acme.local</strong> for the first time. Verify the certificate fingerprint matches what your administrator provided.
+          <div class="card card-comfortable" style="margin-top:16px; background:var(--surface)">
+            <div style="font-size:12px; color:var(--text-tertiary); font-weight:500; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px">SHA-256 fingerprint</div>
+            <div class="mono" style="font-size:13px; color:var(--text-primary); word-break:break-all">fGv2 3kpL XQ9m W4nP H8dB 2sRt 7yJa 1cNv</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-primary">Trust &amp; Connect</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Tooltip</h3>
+    <div class="example-card">
+      <div class="row" style="padding:32px 16px">
+        <div class="tt-wrap">
+          <button class="btn btn-ghost btn-icon" aria-label="Camera health"><svg width="16" height="16"><use href="#i-info"/></svg></button>
+          <div class="tt">Last seen 2 seconds ago · 30 FPS</div>
+        </div>
+        <div class="tt-wrap">
+          <button class="btn btn-secondary btn-sm">Hover for details</button>
+          <div class="tt">RTSP stream over TCP · port 554</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NAVIGATION (sidebar + topbar + breadcrumbs + tabs) -->
+<section class="doc-section" id="nav">
+  <div class="section-marker">
+    <div class="section-num">14</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.14 · COMPONENTS · NAVIGATION</div>
+      <h2 class="doc-section-title">Navigation<span class="period">.</span></h2>
+      <p class="doc-section-desc">Sidebar primary nav, topbar for context and global actions, breadcrumbs for deep flows, tabs for in-page sectioning.</p>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Application shell</h3>
+    <div class="app-shell">
+      <aside class="app-sidebar">
+        <div class="app-sidebar-brand">
+          <div class="doc-brand-mark">Supervision</div>
+        </div>
+
+        <div class="app-sidebar-section">Workspace</div>
+        <div class="app-nav-item active">
+          <svg width="18" height="18"><use href="#i-grid"/></svg> Dashboard
+        </div>
+        <div class="app-nav-item">
+          <svg width="18" height="18"><use href="#i-video"/></svg> Live View
+        </div>
+        <div class="app-nav-item">
+          <svg width="18" height="18"><use href="#i-monitor"/></svg> Surveillance
+        </div>
+        <div class="app-nav-item">
+          <svg width="18" height="18"><use href="#i-clock"/></svg> Playback
+        </div>
+        <div class="app-nav-item">
+          <svg width="18" height="18"><use href="#i-file"/></svg> Incidents
+          <span class="badge badge-critical" style="margin-left:auto; height:18px; padding:0 6px; font-size:11px">3</span>
+        </div>
+
+        <div class="app-sidebar-section">Manage</div>
+        <div class="app-nav-item">
+          <svg width="18" height="18"><use href="#i-camera"/></svg> Cameras
+        </div>
+        <div class="app-nav-item">
+          <svg width="18" height="18"><use href="#i-server"/></svg> Servers
+        </div>
+        <div class="app-nav-item">
+          <svg width="18" height="18"><use href="#i-users"/></svg> Users
+        </div>
+
+        <div class="app-nav-spacer"></div>
+
+        <div class="app-nav-bottom">
+          <div class="app-nav-item">
+            <svg width="18" height="18"><use href="#i-shield"/></svg> Health
+          </div>
+          <div class="app-nav-item">
+            <svg width="18" height="18"><use href="#i-settings"/></svg> Settings
+          </div>
+        </div>
+      </aside>
+
+      <div>
+        <div class="app-topbar">
+          <div class="breadcrumbs">
+            <a class="breadcrumb-link" href="#">Cameras</a>
+            <span class="breadcrumb-sep"><svg width="12" height="12"><use href="#i-chevron-right"/></svg></span>
+            <a class="breadcrumb-link" href="#">Main warehouse</a>
+            <span class="breadcrumb-sep"><svg width="12" height="12"><use href="#i-chevron-right"/></svg></span>
+            <span class="breadcrumb-current">Front entrance</span>
+          </div>
+          <div class="row-tight">
+            <button class="btn btn-ghost btn-icon" aria-label="Notifications">
+              <svg width="16" height="16"><use href="#i-bell"/></svg>
+            </button>
+            <div class="avatar avatar-cyan">VK</div>
+          </div>
+        </div>
+        <div class="app-content">
+          <div class="tabs" style="margin-bottom:16px">
+            <div class="tab active">Overview</div>
+            <div class="tab">Recordings</div>
+            <div class="tab">Events</div>
+            <div class="tab">Configuration</div>
+          </div>
+          <div class="card card-comfortable">
+            <div class="card-header">
+              <div>
+                <div class="card-eyebrow">Camera detail</div>
+                <h3 class="card-title" style="margin-top:4px">Front entrance — bay 4</h3>
+              </div>
+              <span class="badge-dot online"><span class="badge-dot-label">Online</span></span>
+            </div>
+            <div class="row" style="gap:24px; font-size:13px; color:var(--text-secondary)">
+              <span class="row-tight"><svg width="14" height="14"><use href="#i-server"/></svg> Warehouse Server</span>
+              <span class="mono">192.168.1.201:554</span>
+              <span class="mono">30 FPS</span>
+              <span class="mono">4.2 Mbps</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EMPTY & LOADING -->
+<section class="doc-section" id="empty">
+  <div class="section-marker">
+    <div class="section-num">15</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.15 · COMPONENTS · EMPTY &amp; LOADING</div>
+      <h2 class="doc-section-title">Empty &amp; Loading<span class="period">.</span></h2>
+      <p class="doc-section-desc">Empty states are not failures — they're invitations. Loading skeletons match the shape of incoming content.</p>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Empty state</h3>
+    <div class="example-card">
+      <div class="empty">
+        <div class="empty-icon"><svg width="24" height="24"><use href="#i-server"/></svg></div>
+        <h3 class="empty-title">No servers connected</h3>
+        <p class="empty-desc">Connect to your first Supervision server to start viewing cameras. You'll need the server's hostname or IP address and your credentials.</p>
+        <button class="btn btn-primary"><svg width="14" height="14"><use href="#i-plus"/></svg> Connect a server</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Loading skeletons</h3>
+    <div class="example-card">
+      <div class="example-label">Card skeleton</div>
+      <div class="card" style="margin-bottom:24px">
+        <div class="row" style="margin-bottom:16px"><div class="sk sk-line" style="width:120px"></div></div>
+        <div class="sk" style="height:32px; width:80px; margin-bottom:8px"></div>
+        <div class="sk sk-line" style="width:80%"></div>
+      </div>
+
+      <div class="example-label">Table skeleton</div>
+      <div class="table-wrap">
+        <div style="padding:0 16px; height:40px; display:flex; align-items:center; background:var(--surface); border-bottom:1px solid var(--border-subtle)">
+          <div class="sk sk-line" style="width:90px"></div>
+        </div>
+        <div style="padding:14px 16px; border-bottom:1px solid var(--border-subtle); display:flex; gap:24px">
+          <div class="sk sk-line" style="width:200px"></div>
+          <div class="sk sk-line" style="width:120px"></div>
+          <div class="sk sk-line" style="width:80px"></div>
+        </div>
+        <div style="padding:14px 16px; border-bottom:1px solid var(--border-subtle); display:flex; gap:24px">
+          <div class="sk sk-line" style="width:180px"></div>
+          <div class="sk sk-line" style="width:120px"></div>
+          <div class="sk sk-line" style="width:80px"></div>
+        </div>
+        <div style="padding:14px 16px; display:flex; gap:24px">
+          <div class="sk sk-line" style="width:220px"></div>
+          <div class="sk sk-line" style="width:120px"></div>
+          <div class="sk sk-line" style="width:80px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VIDEO TILES -->
+<section class="doc-section" id="video-tiles">
+  <div class="section-marker">
+    <div class="section-num">16</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.16 · COMPONENTS · VIDEO TILES</div>
+      <h2 class="doc-section-title">Video Tiles<span class="period">.</span></h2>
+      <p class="doc-section-desc">The most product-specific component. Corner registration marks frame the feed. Hover reveals controls. Alerts pulse a critical-colored shadow halo.</p>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Standard tile · live view</h3>
+    <div class="doc-grid" style="grid-template-columns:repeat(2, 1fr); gap:16px">
+      <div class="video-tile feed-cool">
+        <div class="video-corner-tl"></div>
+        <div class="video-corner-tr"></div>
+        <div class="video-corner-bl"></div>
+        <div class="video-corner-br"></div>
+        <div class="video-overlay-top">
+          <div class="video-camera-tag">
+            <span class="live-dot"></span>
+            <span class="name">CAM_03</span>
+            <span class="site">— Front entrance</span>
+          </div>
+          <span class="video-timestamp">14:22:08</span>
+        </div>
+        <div class="video-overlay-bottom">
+          <div class="video-meta-line">30 FPS · 4.2 MBPS</div>
+          <div class="video-controls">
+            <button class="video-control-btn" aria-label="Snapshot"><svg width="14" height="14"><use href="#i-camera"/></svg></button>
+            <button class="video-control-btn" aria-label="Audio"><svg width="14" height="14"><use href="#i-volume"/></svg></button>
+            <button class="video-control-btn" aria-label="Fullscreen"><svg width="14" height="14"><use href="#i-fullscreen"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="video-tile feed-warm">
+        <div class="video-corner-tl"></div>
+        <div class="video-corner-tr"></div>
+        <div class="video-corner-bl"></div>
+        <div class="video-corner-br"></div>
+        <div class="video-overlay-top">
+          <div class="video-camera-tag">
+            <span class="live-dot"></span>
+            <span class="name">CAM_07</span>
+            <span class="site">— Loading dock A</span>
+          </div>
+          <span class="video-timestamp">14:22:08</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-subsection">
+    <h3 class="doc-subsection-title">Tile states</h3>
+    <div class="doc-grid" style="grid-template-columns:repeat(4, 1fr); gap:16px">
+
+      <div>
+        <div class="example-label">Normal</div>
+        <div class="video-tile feed-night">
+          <div class="video-corner-tl"></div>
+          <div class="video-corner-tr"></div>
+          <div class="video-corner-bl"></div>
+          <div class="video-corner-br"></div>
+          <div class="video-overlay-top">
+            <div class="video-camera-tag"><span class="live-dot"></span><span class="name">CAM_12</span></div>
+            <span class="video-timestamp">02:14:55</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="example-label">Alerting</div>
+        <div class="video-tile feed-cool alerting">
+          <div class="video-corner-tl"></div>
+          <div class="video-corner-tr"></div>
+          <div class="video-corner-bl"></div>
+          <div class="video-corner-br"></div>
+          <div class="video-overlay-top">
+            <div class="video-camera-tag"><span class="live-dot alert"></span><span class="name">CAM_04</span></div>
+            <span class="video-timestamp">14:22:08</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="example-label">Offline</div>
+        <div class="video-tile offline-state">
+          <svg class="icon" width="24" height="24"><use href="#i-camera-off"/></svg>
+          <div style="font-size:13px; font-weight:500">Camera Offline</div>
+          <div class="mono" style="font-size:11px; color:var(--text-tertiary); letter-spacing:0.04em; text-transform:uppercase">LAST SEEN 4M AGO</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="example-label">Loading</div>
+        <div class="video-tile loading-state">
+          <svg width="24" height="24"><use href="#i-camera"/></svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD COMPOSITION -->
+<section class="doc-section" id="dashboard-comp">
+  <div class="section-marker">
+    <div class="section-num">17</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.17 · COMPOSITIONS · DASHBOARD</div>
+      <h2 class="doc-section-title">Dashboard fragment<span class="period">.</span></h2>
+      <p class="doc-section-desc">How the primitives compose. A real dashboard mixes stat readouts, event lists, and tables with restraint and consistency.</p>
+    </div>
+  </div>
+
+  <div class="example-card">
+    <div class="row" style="margin-bottom:24px; justify-content:space-between">
+      <div>
+        <div class="example-label">Connected servers</div>
+        <h3 class="card-title" style="font-size:18px">3 servers · 47 cameras · 2 alerts</h3>
+      </div>
+      <div class="row-tight">
+        <button class="btn btn-secondary btn-sm">Filter</button>
+        <button class="btn btn-secondary btn-sm"><svg width="14" height="14"><use href="#i-download"/></svg> Export</button>
+        <button class="btn btn-primary btn-sm"><svg width="14" height="14"><use href="#i-plus"/></svg> Add server</button>
+      </div>
+    </div>
+
+    <div class="doc-grid" style="grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:24px">
+      <div class="stat-readout">
+        <div class="stat-readout-eyebrow">
+          <span>Online cameras</span>
+          <svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg>
+        </div>
+        <div class="stat-readout-val">42<span class="unit">/ 47</span></div>
+        <div class="stat-readout-trend positive">▲ +2 since yesterday</div>
+      </div>
+      <div class="stat-readout">
+        <div class="stat-readout-eyebrow">
+          <span>Recording</span>
+          <svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-video"/></svg>
+        </div>
+        <div class="stat-readout-val">38</div>
+        <div class="stat-readout-trend neutral">9 paused · biz hours</div>
+      </div>
+      <div class="stat-readout">
+        <div class="stat-readout-eyebrow">
+          <span>Storage free</span>
+          <svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-hard-drive"/></svg>
+        </div>
+        <div class="stat-readout-val">12.4<span class="unit">TB</span></div>
+        <div class="stat-readout-trend neutral">avg 24-day retention</div>
+      </div>
+      <div class="stat-readout">
+        <div class="stat-readout-eyebrow">
+          <span>Open alerts</span>
+          <svg width="14" height="14" style="color:var(--status-critical)"><use href="#i-alert"/></svg>
+        </div>
+        <div class="stat-readout-val critical">2</div>
+        <div class="stat-readout-trend negative">▼ 1 critical · 1 warn</div>
+      </div>
+    </div>
+
+    <div class="frame-label" style="margin-top:32px">Recent events</div>
+    <div class="example-stack">
+      <div class="demo-event-row">
+        <div class="event-thumb"></div>
+        <div class="event-meta">
+          <p class="event-title">Person detected — Front entrance</p>
+          <p class="event-detail">Warehouse Server · cam_03 · 192.168.1.201</p>
+        </div>
+        <span class="badge-dot critical"><span class="badge-dot-label">Critical</span></span>
+        <span class="event-time">14:22:08</span>
+      </div>
+      <div class="demo-event-row">
+        <div class="event-thumb"></div>
+        <div class="event-meta">
+          <p class="event-title">Line crossing — Loading dock A</p>
+          <p class="event-detail">Warehouse Server · cam_07 · 192.168.1.207</p>
+        </div>
+        <span class="badge-dot warning"><span class="badge-dot-label">Warning</span></span>
+        <span class="event-time">14:18:42</span>
+      </div>
+      <div class="demo-event-row">
+        <div class="event-thumb"></div>
+        <div class="event-meta">
+          <p class="event-title">Tampering — Cold storage</p>
+          <p class="event-detail">Cold Annex Server · cam_42 · 10.0.4.42</p>
+        </div>
+        <span class="badge-dot warning"><span class="badge-dot-label">Warning</span></span>
+        <span class="event-time">13:51:17</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ONBOARDING COMPOSITION -->
+<section class="doc-section" id="onboarding-comp">
+  <div class="section-marker">
+    <div class="section-num">18</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.18 · COMPOSITIONS · ONBOARDING</div>
+      <h2 class="doc-section-title">Onboarding flow<span class="period">.</span></h2>
+      <p class="doc-section-desc">First-launch onboarding uses comfortable density (24&nbsp;px card padding, 15&nbsp;px body). The stepper communicates progress; copy is direct and operator-aware.</p>
+    </div>
+  </div>
+
+  <div class="card card-comfortable" style="max-width:720px; margin:0 auto">
+    <div class="stepper" style="margin-bottom:24px">
+      <span class="step complete"><span class="step-num"><svg width="10" height="10"><use href="#i-check-circle"/></svg></span> Server</span>
+      <span class="step-divider"></span>
+      <span class="step active"><span class="step-num">2</span> Cameras</span>
+      <span class="step-divider"></span>
+      <span class="step"><span class="step-num">3</span> Sites</span>
+      <span class="step-divider"></span>
+      <span class="step"><span class="step-num">4</span> Done</span>
+    </div>
+
+    <div style="margin-bottom:24px">
+      <div class="example-label">Step 2 of 4</div>
+      <h2 style="font-size:22px; font-weight:600; margin:0 0 8px">Add cameras to this server</h2>
+      <p style="font-size:15px; line-height:22px; color:var(--text-secondary); margin:0">Supervision will discover Hikvision and Dahua devices on the local network automatically. Switch to <strong style="color:var(--text-primary)">Pro mode</strong> to enter connection strings directly — useful when cameras are on a separate VLAN or behind an NVR.</p>
+    </div>
+
+    <div class="row" style="margin-bottom:16px; justify-content:space-between">
+      <div class="segment">
+        <div class="segment-item active">Auto-discover</div>
+        <div class="segment-item">Pro mode</div>
+        <div class="segment-item">Bulk import</div>
+      </div>
+      <div class="row-tight">
+        <span class="muted" style="font-size:13px">Discovered: <span class="mono" style="color:var(--text-primary); font-weight:500">17</span></span>
+        <button class="btn btn-ghost btn-sm">Re-scan</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width:30px"><span class="check checked"></span></th>
+            <th>Camera</th>
+            <th>Manufacturer</th>
+            <th>IP</th>
+            <th>Auth</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="check checked"></span></td>
+            <td><div class="row-tight"><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg> DS-2CD2143G0-I</div></td>
+            <td>Hikvision</td>
+            <td class="num">192.168.1.201</td>
+            <td><span class="badge badge-online">Authenticated</span></td>
+          </tr>
+          <tr>
+            <td><span class="check checked"></span></td>
+            <td><div class="row-tight"><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg> DS-2CD2143G0-I</div></td>
+            <td>Hikvision</td>
+            <td class="num">192.168.1.202</td>
+            <td><span class="badge badge-online">Authenticated</span></td>
+          </tr>
+          <tr>
+            <td><span class="check"></span></td>
+            <td><div class="row-tight"><svg width="14" height="14" style="color:var(--text-tertiary)"><use href="#i-camera"/></svg> IPC-HFW2431S</div></td>
+            <td>Dahua</td>
+            <td class="num">192.168.1.215</td>
+            <td><span class="badge badge-warning">Auth failed</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row" style="justify-content:space-between; margin-top:24px">
+      <button class="btn btn-secondary">← Back</button>
+      <button class="btn btn-primary btn-lg">Continue with 16 cameras <svg width="14" height="14"><use href="#i-arrow-right"/></svg></button>
+    </div>
+  </div>
+</section>
+
+<!-- SURVEILLANCE MODE -->
+<section class="doc-section" id="surveillance-comp">
+  <div class="section-marker">
+    <div class="section-num">19</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.19 · COMPOSITIONS · SURVEILLANCE</div>
+      <h2 class="doc-section-title">Surveillance mode<span class="period">.</span></h2>
+      <p class="doc-section-desc">A distinct environment for sustained monitoring. Chrome recedes; the work surface takes over. Floating toolbar is always one keystroke away.</p>
+    </div>
+  </div>
+
+  <div class="surveillance-stage">
+    <div class="surveillance-toolbar">
+      <button class="s-tool-btn">2×2</button>
+      <button class="s-tool-btn active">3×3</button>
+      <button class="s-tool-btn">4×4</button>
+      <button class="s-tool-btn"><svg width="12" height="12"><use href="#i-clock"/></svg> Tour</button>
+      <button class="s-tool-btn"><svg width="12" height="12"><use href="#i-cast"/></svg> Cast</button>
+    </div>
+
+    <div class="surveillance-grid">
+      <div class="video-tile feed-cool">
+        <div class="video-corner-tl"></div>
+        <div class="video-corner-tr"></div>
+        <div class="video-corner-bl"></div>
+        <div class="video-corner-br"></div>
+        <div class="video-overlay-top">
+          <div class="video-camera-tag"><span class="live-dot"></span><span class="name">CAM_01</span></div>
+          <span class="video-timestamp">14:22:08</span>
+        </div>
+      </div>
+      <div class="video-tile feed-warm alerting">
+        <div class="video-corner-tl"></div>
+        <div class="video-corner-tr"></div>
+        <div class="video-corner-bl"></div>
+        <div class="video-corner-br"></div>
+        <div class="video-overlay-top">
+          <div class="video-camera-tag"><span class="live-dot alert"></span><span class="name">CAM_03</span></div>
+          <span class="video-timestamp">14:22:08</span>
+        </div>
+      </div>
+      <div class="video-tile feed-night">
+        <div class="video-corner-tl"></div>
+        <div class="video-corner-tr"></div>
+        <div class="video-corner-bl"></div>
+        <div class="video-corner-br"></div>
+        <div class="video-overlay-top">
+          <div class="video-camera-tag"><span class="live-dot"></span><span class="name">CAM_07</span></div>
+          <span class="video-timestamp">14:22:08</span>
+        </div>
+      </div>
+      <div class="video-tile feed-cool">
+        <div class="video-corner-tl"></div>
+        <div class="video-corner-tr"></div>
+        <div class="video-corner-bl"></div>
+        <div class="video-corner-br"></div>
+        <div class="video-overlay-top">
+          <div class="video-camera-tag"><span class="live-dot"></span><span class="name">CAM_12</span></div>
+          <span class="video-timestamp">14:22:08</span>
+        </div>
+      </div>
+      <div class="video-tile offline-state" style="background:var(--canvas-raised)">
+        <svg style="color:rgba(244,244,245,0.4)" width="24" height="24"><use href="#i-camera-off"/></svg>
+        <div class="mono" style="font-size:11px; color:rgba(244,244,245,0.6); letter-spacing:0.05em; text-transform:uppercase">CAM_18 · OFFLINE</div>
+      </div>
+      <div class="video-tile feed-warm">
+        <div class="video-corner-tl"></div>
+        <div class="video-corner-tr"></div>
+        <div class="video-corner-bl"></div>
+        <div class="video-corner-br"></div>
+        <div class="video-overlay-top">
+          <div class="video-camera-tag"><span class="live-dot"></span><span class="name">CAM_22</span></div>
+          <span class="video-timestamp">14:22:08</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="surveillance-event-feed">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08)">
+        <div class="sf-title">LIVE EVENTS · CAM_03</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--status-critical);font-weight:600;letter-spacing:0.05em">3 NEW</div>
+      </div>
+      <div class="sf-event">
+        <div class="sf-event-dot"></div>
+        <div class="sf-event-body">
+          <p class="sf-event-text">Person detected — bay 4</p>
+          <p class="sf-event-meta">14:22:08 · ALERT-2847</p>
+        </div>
+      </div>
+      <div class="sf-event">
+        <div class="sf-event-dot" style="background:var(--status-warning); box-shadow:0 0 6px var(--status-warning-subtle)"></div>
+        <div class="sf-event-body">
+          <p class="sf-event-text">Line crossing — bay 4</p>
+          <p class="sf-event-meta">14:18:42 · WARN-2846</p>
+        </div>
+      </div>
+      <div class="sf-event">
+        <div class="sf-event-dot" style="background:rgba(244,244,245,0.3); box-shadow:none"></div>
+        <div class="sf-event-body">
+          <p class="sf-event-text">Motion — Loading dock A</p>
+          <p class="sf-event-meta">13:51:17 · INFO-2845</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODE COMPARISON -->
+<section class="doc-section" id="mode-comparison">
+  <div class="section-marker">
+    <div class="section-num">20</div>
+    <div class="section-title-block">
+      <div class="doc-section-eyebrow">SVN.20 · COMPOSITIONS · MODE COMPARISON</div>
+      <h2 class="doc-section-title">Mode comparison<span class="period">.</span></h2>
+      <p class="doc-section-desc">The same component composed across all three modes. Notice how chrome shifts, accents tune, but the system stays coherent.</p>
+    </div>
+  </div>
+
+  <div class="mode-comparison">
+
+    <div class="mode-comparison-cell">
+      <div class="preview-label" style="background:#F4F4F5;color:#71717A;border-bottom-color:#F1F1F4">Light</div>
+      <div class="preview" data-preview="light">
+        <div style="background:var(--canvas-raised);border:1px solid var(--border-subtle);border-radius:6px;padding:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" style="color:var(--accent)"><use href="#i-server"/></svg>
+              <div style="font-weight:600;font-size:15px;color:var(--text-primary)">Warehouse Server</div>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:4px;font-size:12px;font-weight:500;background:var(--status-online-subtle);color:var(--status-online)">
+              <svg width="10" height="10"><use href="#i-check-circle"/></svg> Online
+            </span>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);font-family:'JetBrains Mono',monospace">10.0.4.12 · 16 cameras · uptime 42d 11h</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mode-comparison-cell">
+      <div class="preview-label" style="background:#1C232D;color:#71717A;border-bottom-color:#1F2530">Dark</div>
+      <div class="preview" data-preview="dark">
+        <div style="background:var(--canvas-raised);border:1px solid var(--border-subtle);border-radius:6px;padding:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" style="color:var(--accent)"><use href="#i-server"/></svg>
+              <div style="font-weight:600;font-size:15px;color:var(--text-primary)">Warehouse Server</div>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:4px;font-size:12px;font-weight:500;background:var(--status-online-subtle);color:var(--status-online)">
+              <svg width="10" height="10"><use href="#i-check-circle"/></svg> Online
+            </span>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);font-family:'JetBrains Mono',monospace">10.0.4.12 · 16 cameras · uptime 42d 11h</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mode-comparison-cell">
+      <div class="preview-label" style="background:#161C24;color:#71717A;border-bottom-color:#161C24">Surveillance</div>
+      <div class="preview" data-preview="surveillance">
+        <div style="background:var(--canvas-raised);border:1px solid var(--border-subtle);border-radius:6px;padding:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" style="color:var(--accent)"><use href="#i-server"/></svg>
+              <div style="font-weight:600;font-size:15px;color:var(--text-primary)">Warehouse Server</div>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:4px;font-size:12px;font-weight:500;background:var(--status-online-subtle);color:var(--status-online)">
+              <svg width="10" height="10"><use href="#i-check-circle"/></svg> Online
+            </span>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);font-family:'JetBrains Mono',monospace">10.0.4.12 · 16 cameras · uptime 42d 11h</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="doc-section" style="padding:48px 56px">
+  <div style="display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary)">
+    <span style="width:24px;height:1px;background:var(--accent)"></span>
+    <span>END OF SYSTEM REFERENCE</span>
+    <span style="flex:1;height:1px;background:var(--border-subtle)"></span>
+    <span>SVN.VISUAL.V1.0</span>
+  </div>
+  <p style="margin-top:16px;font-size:14px;color:var(--text-secondary);max-width:600px;line-height:1.5">
+    Components and tokens here are the source of truth for V1 UI. New patterns can be proposed by adding to the design system document, then formalized here once accepted.
+  </p>
+</div>
+
+</div>
+</main>
+</div>
+
+<!-- System status bar -->
+<div class="system-bar">
+  <div class="system-bar-left">
+    <div class="item"><span class="pip"></span><span class="val">SUPERVISION.VISUAL</span></div>
+    <div class="item"><span class="lbl">VER</span><span class="val">1.0.0</span></div>
+    <div class="item"><span class="lbl">BUILD</span><span class="val">2026.05.05</span></div>
+  </div>
+  <div class="system-bar-right">
+    <div class="item"><span class="lbl">MODE</span><span class="val" id="sb-mode">LIGHT</span></div>
+    <div class="item"><span class="lbl">COMPONENTS</span><span class="val">47</span></div>
+    <div class="item"><span class="lbl">TOKENS</span><span class="val">82</span></div>
+    <div class="item"><span class="val">DRAFT</span></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const root = document.documentElement;
+  const buttons = document.querySelectorAll('[data-mode-set]');
+  const sbMode = document.getElementById('sb-mode');
+
+  function setMode(mode) {
+    if (mode === 'light') {
+      root.setAttribute('data-theme', 'light');
+      root.setAttribute('data-mode', 'standard');
+    } else if (mode === 'dark') {
+      root.setAttribute('data-theme', 'dark');
+      root.setAttribute('data-mode', 'standard');
+    } else if (mode === 'surveillance') {
+      root.setAttribute('data-theme', 'dark');
+      root.setAttribute('data-mode', 'surveillance');
+    }
+    buttons.forEach(b => b.setAttribute('aria-pressed', b.dataset.modeSet === mode ? 'true' : 'false'));
+    if (sbMode) sbMode.textContent = mode === 'surveillance' ? 'SURV' : mode.toUpperCase();
+    try { localStorage.setItem('supervision-design-mode', mode); } catch(e) {}
+  }
+
+  buttons.forEach(b => b.addEventListener('click', () => setMode(b.dataset.modeSet)));
+
+  // Restore prior mode
+  try {
+    const saved = localStorage.getItem('supervision-design-mode');
+    if (saved) setMode(saved);
+  } catch(e) {}
+
+  // Toggle interactivity demos
+  document.querySelectorAll('.toggle').forEach(t => {
+    t.addEventListener('click', () => t.classList.toggle('on'));
+  });
+  document.querySelectorAll('.check').forEach(c => {
+    c.addEventListener('click', () => c.classList.toggle('checked'));
+  });
+  document.querySelectorAll('.segment-item').forEach(s => {
+    s.addEventListener('click', () => {
+      s.parentElement.querySelectorAll('.segment-item').forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.s-tool-btn').forEach(s => {
+    s.addEventListener('click', () => {
+      const sib = s.parentElement.querySelectorAll('.s-tool-btn');
+      sib.forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      t.parentElement.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

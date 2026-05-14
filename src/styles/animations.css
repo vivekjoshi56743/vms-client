@@ -1,0 +1,38 @@
+/* ============================================================
+   ANIMATIONS — keyframes extracted verbatim from
+   supervision-visual-system.html. Components compose these via
+   utility classes or animation-name declarations.
+   ============================================================ */
+
+@keyframes brand-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.15); }
+}
+
+@keyframes live-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.7); opacity: 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes critical-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes alert-shadow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--status-critical-glow), inset 0 0 0 2px var(--status-critical);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent, inset 0 0 0 2px var(--status-critical);
+  }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}

@@ -1,0 +1,1090 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "On-premise Video Management System (VMS) API.",
+        "title": "Supervision Server API",
+        "contact": {
+            "name": "Bipolar Factory",
+            "email": "vivekjoshi@bipolarfactory.com"
+        },
+        "version": "0.1.0"
+    },
+    "host": "localhost:8443",
+    "basePath": "/",
+    "paths": {
+        "/api/auth/login": {
+            "post": {
+                "description": "Authenticate with username and password. Returns a session token valid for 24 hours.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login",
+                "parameters": [
+                    {
+                        "description": "Credentials",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the profile of the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get current user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.UserResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cameras": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all cameras ordered by creation time. Available to all authenticated users.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cameras"
+                ],
+                "summary": "List cameras",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/apitypes.CameraResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Probes the camera for RTSP connectivity, then persists it. Requires admin or owner role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cameras"
+                ],
+                "summary": "Add camera",
+                "parameters": [
+                    {
+                        "description": "Camera details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.CreateCameraRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.CameraResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or camera unreachable",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cameras/health": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the most recent health status for every known camera. Cameras the monitor has not yet polled are omitted.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cameras"
+                ],
+                "summary": "List camera health",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/apitypes.CameraHealthResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cameras/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a single camera by ID. Available to all authenticated users.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cameras"
+                ],
+                "summary": "Get camera",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.CameraResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes a camera by ID. Requires admin or owner role.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cameras"
+                ],
+                "summary": "Delete camera",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Patches recording configuration for a camera. Only supplied fields are changed. Requires admin or owner.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cameras"
+                ],
+                "summary": "Update camera settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.PatchCameraRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.CameraResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cameras/{id}/health": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the most recent health status for a single camera. 404 if the camera does not exist; 200 with status=unknown if it has not been polled yet.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cameras"
+                ],
+                "summary": "Get camera health",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.CameraHealthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cameras/{id}/playback": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns URLs to stream every recorded segment for this camera in [start, end) as one continuous fMP4. MediaMTX handles segment stitching transparently.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "recording"
+                ],
+                "summary": "Get playback URLs for a time range",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Range start (RFC3339 UTC)",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Range end (RFC3339 UTC)",
+                        "name": "end",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.PlaybackURLs"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cameras/{id}/recordings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns completed recording segments for a camera, newest first. Supports optional `from` and `to` query params (RFC3339).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "recording"
+                ],
+                "summary": "List recording segments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start of time range (RFC3339)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End of time range (RFC3339)",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Max results (default 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.RecordingListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cameras/{id}/stream": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registers the camera as a MediaMTX source (idempotent) and returns all available playback URLs: WebRTC/WHEP, HLS, RTSP, RTMP, SRT. Use whichever format your player supports.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "streaming"
+                ],
+                "summary": "Get stream URLs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.StreamURLs"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "MediaMTX path registration failed",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/recordings/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes the recording segment from storage and the database. Requires admin or owner.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "recording"
+                ],
+                "summary": "Delete recording segment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/recordings/{id}/file": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Streams the raw .mp4 (or .ts) segment file. Supports HTTP Range requests for seeking.",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "recording"
+                ],
+                "summary": "Download a recording segment file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/recordings/{id}/playback": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns URLs the client can use to play a recorded segment. The fMP4 URL points at the supervision-server's authenticated playback proxy.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "recording"
+                ],
+                "summary": "Get playback URLs for a recording",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Segment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.PlaybackURLs"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/healthz": {
+            "get": {
+                "description": "Returns ok when the server is up and accepting requests.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.HealthResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "apitypes.CameraHealthResponse": {
+            "type": "object",
+            "properties": {
+                "bytes_received": {
+                    "type": "integer",
+                    "example": 1048576
+                },
+                "camera_id": {
+                    "type": "string",
+                    "example": "a1b2c3d4e5f6"
+                },
+                "last_checked": {
+                    "type": "string",
+                    "example": "2026-05-14T10:00:10Z"
+                },
+                "last_error": {
+                    "type": "string",
+                    "example": "connect to 192.168.1.42:554: timeout"
+                },
+                "last_seen": {
+                    "type": "string",
+                    "example": "2026-05-14T10:00:00Z"
+                },
+                "source": {
+                    "type": "string",
+                    "enum": [
+                        "mediamtx",
+                        "rtsp_probe"
+                    ],
+                    "example": "mediamtx"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "unknown",
+                        "online",
+                        "degraded",
+                        "offline"
+                    ],
+                    "example": "online"
+                }
+            }
+        },
+        "apitypes.CameraResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-05-12T10:00:00Z"
+                },
+                "driver_type": {
+                    "type": "string",
+                    "example": "generic_rtsp"
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "id": {
+                    "type": "string",
+                    "example": "a1b2c3d4e5f6"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Front Door"
+                },
+                "record_enabled": {
+                    "description": "Recording configuration",
+                    "type": "boolean",
+                    "example": true
+                },
+                "record_format": {
+                    "type": "string",
+                    "example": "fmp4"
+                },
+                "record_retention_hours": {
+                    "type": "integer",
+                    "example": 720
+                },
+                "record_segment_seconds": {
+                    "type": "integer",
+                    "example": 3600
+                },
+                "rtsp_url": {
+                    "type": "string",
+                    "example": "rtsp://192.168.1.100:554/stream1"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "apitypes.CreateCameraRequest": {
+            "type": "object",
+            "properties": {
+                "driver_type": {
+                    "type": "string",
+                    "example": "generic_rtsp"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Front Door"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "password123"
+                },
+                "rtsp_url": {
+                    "type": "string",
+                    "example": "rtsp://192.168.1.100:554/stream1"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "apitypes.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "invalid credentials"
+                }
+            }
+        },
+        "apitypes.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "apitypes.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "super-secret"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "apitypes.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string",
+                    "example": "2026-05-13T10:00:00Z"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "a3f5c8d1e2b4..."
+                }
+            }
+        },
+        "apitypes.PatchCameraRequest": {
+            "type": "object",
+            "properties": {
+                "record_enabled": {
+                    "type": "boolean"
+                },
+                "record_format": {
+                    "type": "string"
+                },
+                "record_retention_hours": {
+                    "type": "integer"
+                },
+                "record_segment_seconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "apitypes.PlaybackURLs": {
+            "type": "object",
+            "properties": {
+                "camera_id": {
+                    "type": "string",
+                    "example": "b0b392098f5754acf95a144effdd060c"
+                },
+                "duration": {
+                    "type": "string",
+                    "example": "300s"
+                },
+                "fmp4": {
+                    "type": "string",
+                    "example": "https://192.168.1.10:8443/api/_playback/get?path=cam-b0b392...&start=2026-05-14T10:30:00Z&duration=300s&format=fmp4"
+                },
+                "path": {
+                    "type": "string",
+                    "example": "cam-b0b392098f5754acf95a144effdd060c"
+                },
+                "start": {
+                    "type": "string",
+                    "example": "2026-05-14T10:30:00Z"
+                }
+            }
+        },
+        "apitypes.RecordingListResponse": {
+            "type": "object",
+            "properties": {
+                "segments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apitypes.RecordingSegment"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "apitypes.RecordingSegment": {
+            "type": "object",
+            "properties": {
+                "camera_id": {
+                    "type": "string",
+                    "example": "b0b392098f5754acf95a144effdd060c"
+                },
+                "duration_seconds": {
+                    "type": "number",
+                    "example": 3600
+                },
+                "ended_at": {
+                    "type": "string",
+                    "example": "2024-01-15T11:30:00Z"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "a1b2c3d4e5f6"
+                },
+                "size_bytes": {
+                    "type": "integer",
+                    "example": 524288000
+                },
+                "started_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "storage_key": {
+                    "type": "string",
+                    "example": "cam-b0b392.../2024-01-15_10-30-00.mp4"
+                }
+            }
+        },
+        "apitypes.StreamURLs": {
+            "type": "object",
+            "properties": {
+                "camera_id": {
+                    "type": "string",
+                    "example": "b0b392098f5754acf95a144effdd060c"
+                },
+                "hls": {
+                    "type": "string",
+                    "example": "http://192.168.1.10:8888/cam-b0b392.../index.m3u8"
+                },
+                "path": {
+                    "type": "string",
+                    "example": "cam-b0b392098f5754acf95a144effdd060c"
+                },
+                "rtmp": {
+                    "type": "string",
+                    "example": "rtmp://192.168.1.10:1935/cam-b0b392..."
+                },
+                "rtsp": {
+                    "type": "string",
+                    "example": "rtsp://192.168.1.10:8554/cam-b0b392..."
+                },
+                "srt": {
+                    "type": "string",
+                    "example": "srt://192.168.1.10:8890?streamid=read:cam-b0b392..."
+                },
+                "webrtc": {
+                    "type": "string",
+                    "example": "http://192.168.1.10:8889/cam-b0b392.../whep"
+                }
+            }
+        },
+        "apitypes.UserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-05-12T10:00:00Z"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400e29b41d4a716446655440000"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "owner"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Session token obtained from POST /api/auth/login. Format: \"Bearer <token>\"",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
