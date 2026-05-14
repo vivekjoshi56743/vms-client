@@ -16,9 +16,18 @@ export default defineConfig(async () => ({
   },
 
   build: {
-    // plan.md budget: < 5 MB JS. Raise Vite's advisory from the 500 KB default
-    // so the output is not noisy while we're still under budget.
+    // plan.md budget: < 5 MB JS. Split hls.js into its own chunk (it's ~600 KB)
+    // so the main bundle stays lean.
     chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-hls": ["hls.js"],
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-query": ["@tanstack/react-query"],
+        },
+      },
+    },
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
