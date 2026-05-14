@@ -26,7 +26,7 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
-// .modal from supervision-visual-system.html — canvas-overlay surface,
+// .modal from docs/supervision-visual-system.html — canvas-overlay surface,
 // 8px radius, shadow-lg, 560px max width.
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,

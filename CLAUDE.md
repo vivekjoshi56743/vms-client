@@ -4,10 +4,10 @@
 
 This file is the durable instruction set for the Supervision Client frontend project. It is the persistent contract between sessions. If anything in this file conflicts with a request, surface the conflict — do not silently break the rules.
 
-Source documents (in this directory, all authoritative):
-- `plan.md` — the architecture plan; CLAUDE.md is a distillation of its load-bearing parts.
-- `supervision-visual-system.html` — the single source of truth for design tokens, components, themes.
-- `swagger.json` — the backend's OpenAPI spec; `src/api/schema.ts` is regenerated from this and never edited by hand.
+Source documents (all authoritative; live in `docs/`):
+- `docs/plan.md` — the architecture plan; CLAUDE.md is a distillation of its load-bearing parts.
+- `docs/supervision-visual-system.html` — the single source of truth for design tokens, components, themes.
+- `docs/swagger.json` — the backend's OpenAPI spec; `npm run generate-api-types` converts it to `docs/openapi.json` (gitignored) and writes types to `src/api/schema.ts`. Never hand-edit the schema.
 
 The backend is a Go-based self-hosted VMS, complete through Phase 9 (live streaming, recording, playback, health monitoring). The frontend is a Tauri 2.0 desktop app, starting now.
 
@@ -19,8 +19,9 @@ The backend is a Go-based self-hosted VMS, complete through Phase 9 (live stream
 |---|---|---|
 | **Shell** | Tauri 2.0 | ~10MB installer, native WebView, auto-updater, code-signing, secure storage |
 | **Framework** | React 18 + TypeScript | Largest ecosystem; only framework with shadcn/ui parity; team familiarity |
-| **UI Primitives** | shadcn/ui (Radix-based) | Source-in-repo components, full styling control, accessibility solved |
-| **Styling** | Tailwind CSS configured with design tokens + animations.css for keyframes | Compose utilities from the tokens in `supervision-visual-system.html` |
+| **UI Primitives** | shadcn/ui (Radix-based), via `shadcn@2` CLI — **NOT `shadcn@4`** (targets Tailwind 4 and breaks our token integration) | Source-in-repo components, full styling control, accessibility solved |
+| **Styling** | Tailwind CSS configured with design tokens + animations.css for keyframes | Compose utilities from the tokens in `docs/supervision-visual-system.html` |
+| **Animation utilities** | `tailwindcss-animate` plugin | Required peer of shadcn + Radix; powers `data-state`-driven animations (`animate-in`, `fade-out-0`, `zoom-in-95`, etc.) used by Dialog, DropdownMenu, Select, Tooltip |
 | **Routing** | React Router v6 with HashRouter | Most reliable across all three Tauri WebViews |
 | **Server state** | TanStack Query v5 | Caching, refetching, mutations, WebSocket invalidation |
 | **Client state** | Zustand | Tiny, no boilerplate, used only for UI state not on the server |
@@ -31,9 +32,10 @@ The backend is a Go-based self-hosted VMS, complete through Phase 9 (live stream
 | **Video — playback** | hls.js wrapping the fMP4 URL from backend | Backend's playback proxy returns one continuous fMP4 |
 | **Build tool** | Vite | Standard, fast, integrates with Tauri templates |
 | **Testing** | Vitest + React Testing Library + Playwright | Unit / component / end-to-end |
-| **Type safety with backend** | `openapi-typescript` against backend's `swagger/doc.json` | Regenerated whenever the API changes — never hand-maintained |
+| **Type safety with backend** | `openapi-typescript` v7 against `docs/openapi.json` | Regenerated whenever the API changes — never hand-maintained |
+| **OpenAPI conversion** | `swagger2openapi` | Backend emits Swagger 2.0; openapi-typescript v7 requires OpenAPI 3.x — script converts at build time |
 
-**Versions to pin (latest stable in these majors):** Tauri 2.x · React 18.x · TypeScript 5.x · TanStack Query v5 · Tailwind CSS 3.x · Vite 5.x · Motion (latest, NOT framer-motion).
+**Versions to pin (latest stable in these majors):** Tauri 2.x · React 18.x · TypeScript 5.x · TanStack Query v5 · **Tailwind CSS 3.x** (NOT 4.x) · Vite 5.x · Motion (NOT framer-motion) · **shadcn CLI 2.x** (NOT 4.x) · openapi-typescript v7 + swagger2openapi (chained in `npm run generate-api-types`).
 
 ---
 
@@ -41,6 +43,12 @@ The backend is a Go-based self-hosted VMS, complete through Phase 9 (live stream
 
 ```
 supervision-client/
+├── docs/                            Source-of-truth documents (NOT in src/)
+│   ├── plan.md                      Architecture plan
+│   ├── supervision-visual-system.html  Design system (tokens, components)
+│   ├── swagger.json                 Backend OpenAPI (Swagger 2.0) snapshot
+│   └── openapi.json                 Generated 3.0 conversion (gitignored)
+│
 ├── src-tauri/                       Rust shell (Tauri-generated, mostly untouched)
 │   ├── src/
 │   ├── tauri.conf.json              CSP, window config, updater config
@@ -155,8 +163,8 @@ These rules keep the codebase navigable as it grows. Treat them as load-bearing.
 
 ### Rule 3: API types are generated, not written
 - Run `npm run generate-api-types` after any backend API change.
-- This calls `openapi-typescript` against `localhost:8443/swagger/doc.json` (or local `swagger.json`).
-- Never hand-edit `src/api/schema.ts`.
+- The script converts `docs/swagger.json` (Swagger 2.0) → `docs/openapi.json` (OpenAPI 3.0) via `swagger2openapi`, then writes `src/api/schema.ts` via `openapi-typescript`.
+- Never hand-edit `src/api/schema.ts`. Never hand-edit `docs/openapi.json` either — it's gitignored and regenerated.
 
 ### Rule 4: Design tokens are the only source of color/spacing values
 - No hardcoded hex colors anywhere in components.
@@ -189,7 +197,7 @@ These rules keep the codebase navigable as it grows. Treat them as load-bearing.
 ## 4. Design system integration
 
 ### Token strategy
-- All CSS variables come from `supervision-visual-system.html`, copied into `src/styles/tokens.css`.
+- All CSS variables come from `docs/supervision-visual-system.html`, copied into `src/styles/tokens.css`.
 - Keep all three theme blocks intact: `:root, [data-theme="light"]`, `[data-theme="dark"][data-mode="standard"]`, `[data-mode="surveillance"]`.
 - Reference them in `tailwind.config.js` so utilities like `bg-canvas`, `text-text-primary`, `bg-status-online` map to CSS variables. Map every token, not a subset.
 
@@ -339,7 +347,7 @@ export function AddCameraDialog() {
 
 ---
 
-## 6. Backend API surface (from swagger.json)
+## 6. Backend API surface (from docs/swagger.json)
 
 Base URL: `https://localhost:8443` (self-signed cert; dev accepts, prod uses TOFU). Auth: Bearer token from `POST /api/auth/login`.
 

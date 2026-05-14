@@ -2,7 +2,7 @@ import { Toaster as Sonner } from "sonner";
 
 import { useUIStore } from "@/stores/ui";
 
-// .toast from supervision-visual-system.html — canvas-overlay surface,
+// .toast from docs/supervision-visual-system.html — canvas-overlay surface,
 // 3px colored left border per severity, shadow-md.
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 

@@ -1,8 +1,8 @@
 # Supervision Client — Frontend Plan
 
 **Status:** Architecture decisions locked. Backend Phase 0–9 complete; frontend build starts now.
-**Backend API:** Documented in OpenAPI/Swagger at `localhost:8443/swagger/doc.json`.
-**Design system:** Defined in `supervision-visual-system.html` — single source of truth for tokens, colors, components.
+**Backend API:** Documented in OpenAPI/Swagger at `localhost:8443/swagger/doc.json`; a local snapshot lives at `docs/swagger.json` and is the input to `npm run generate-api-types`.
+**Design system:** Defined in `docs/supervision-visual-system.html` — single source of truth for tokens, colors, components.
 
 ---
 
@@ -12,8 +12,9 @@
 |---|---|---|
 | **Shell** | Tauri 2.0 | ~10MB installer, native WebView, auto-updater, code-signing, secure storage |
 | **Framework** | React 18 + TypeScript | Largest ecosystem; only framework with shadcn/ui parity; team familiarity |
-| **UI Primitives** | shadcn/ui (Radix-based) | Source-in-repo components, full styling control, accessibility solved |
-| **Styling** | Tailwind CSS configured with design tokens + animations.css for keyframes | Compose utilities from the tokens in `supervision-visual-system.html` |
+| **UI Primitives** | shadcn/ui (Radix-based), via `shadcn@2` CLI — **NOT `shadcn@4`** (it targets Tailwind 4 and breaks our token integration) | Source-in-repo components, full styling control, accessibility solved |
+| **Styling** | Tailwind CSS configured with design tokens + animations.css for keyframes | Compose utilities from the tokens in `docs/supervision-visual-system.html` |
+| **Animation utilities** | `tailwindcss-animate` plugin | Required peer of shadcn + Radix; powers `data-state`-driven animations (`animate-in`, `fade-out-0`, `zoom-in-95`, etc.) used by Dialog, DropdownMenu, Select, Tooltip |
 | **Routing** | React Router v6 with HashRouter | Most reliable across all three Tauri WebViews |
 | **Server state** | TanStack Query v5 | Caching, refetching, mutations, WebSocket invalidation |
 | **Client state** | Zustand | Tiny, no boilerplate, used only for UI state not on the server |
@@ -24,16 +25,19 @@
 | **Video — playback** | hls.js wrapping the fMP4 URL from backend | Backend's playback proxy returns one continuous fMP4 |
 | **Build tool** | Vite | Standard, fast, integrates with Tauri templates |
 | **Testing** | Vitest + React Testing Library + Playwright | Unit / component / end-to-end |
-| **Type safety with backend** | `openapi-typescript` against backend's `swagger/doc.json` | Regenerated whenever the API changes — never hand-maintained |
+| **Type safety with backend** | `openapi-typescript` v7 against `docs/openapi.json` | Regenerated whenever the API changes — never hand-maintained |
+| **OpenAPI conversion** | `swagger2openapi` | Backend emits Swagger 2.0; `openapi-typescript` v7 requires OpenAPI 3.x — script converts at build time |
 
 **Versions to pin (use latest stable in these majors):**
 - Tauri 2.x
 - React 18.x
 - TypeScript 5.x
 - TanStack Query v5
-- Tailwind CSS 3.x
+- Tailwind CSS 3.x (NOT 4.x — locks us out of `shadcn@2` and our token-mapped `tailwind.config.js`)
 - Vite 5.x
 - Motion (latest, NOT framer-motion)
+- shadcn CLI 2.x (NOT 4.x — see note above)
+- openapi-typescript v7 + swagger2openapi (chained in `npm run generate-api-types`)
 
 ---
 
@@ -41,6 +45,12 @@
 
 ```
 supervision-client/
+├── docs/                            Source-of-truth documents (NOT in src/)
+│   ├── plan.md                      This file
+│   ├── supervision-visual-system.html  Design system (tokens, components)
+│   ├── swagger.json                 Backend OpenAPI (Swagger 2.0) snapshot
+│   └── openapi.json                 Generated 3.0 conversion (gitignored)
+│
 ├── src-tauri/                       Rust shell (Tauri-generated, mostly untouched)
 │   ├── src/
 │   ├── tauri.conf.json              CSP, window config, updater config
@@ -165,8 +175,8 @@ These rules keep the codebase navigable as it grows. Treat them as load-bearing.
 
 ### Rule 3: API types are generated, not written
 - Run `npm run generate-api-types` after any backend API change.
-- This calls `openapi-typescript` against `localhost:8443/swagger/doc.json`.
-- Never hand-edit `src/api/schema.ts`.
+- The script converts `docs/swagger.json` (Swagger 2.0) → `docs/openapi.json` (OpenAPI 3.0) via `swagger2openapi`, then writes `src/api/schema.ts` via `openapi-typescript`.
+- Never hand-edit `src/api/schema.ts`. Never hand-edit `docs/openapi.json` either — it's gitignored and regenerated.
 
 ### Rule 4: Design tokens are the only source of color/spacing values
 - No hardcoded hex colors anywhere in components.
@@ -199,7 +209,7 @@ These rules keep the codebase navigable as it grows. Treat them as load-bearing.
 ## 4. Design System Integration
 
 ### Token strategy
-- Copy CSS variables from `supervision-visual-system.html` into `src/styles/tokens.css`.
+- Copy CSS variables from `docs/supervision-visual-system.html` into `src/styles/tokens.css`.
 - Keep all three theme blocks (`:root[data-theme="light"]`, `[data-theme="dark"][data-mode="standard"]`, `[data-mode="surveillance"]`).
 - Reference these in `tailwind.config.js`:
 
@@ -270,7 +280,7 @@ Each phase is small, testable, independently runnable. Don't move on until the c
 - **Done when:** "Hello World" Tauri window opens on Win/Mac/Linux
 
 ### Phase F1 — Design tokens + Tailwind integration (~1 day)
-- Copy `tokens.css` from supervision-visual-system.html
+- Copy `tokens.css` from `docs/supervision-visual-system.html`
 - Copy `animations.css` (keyframes only)
 - Configure Tailwind to reference CSS variables
 - Build a `/playground` route showing all colors, all button variants, all input states

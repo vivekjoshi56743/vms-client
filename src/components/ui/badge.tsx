@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/cn";
 
-// .badge-{online,warning,critical,offline,active} from supervision-visual-system.html.
+// .badge-{online,warning,critical,offline,active} from docs/supervision-visual-system.html.
 // JetBrains Mono, 12px, 2/8 padding, status-subtle backgrounds + status-tone text.
 const badgeVariants = cva(
   [

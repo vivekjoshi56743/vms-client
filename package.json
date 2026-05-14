@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "generate-api-types": "swagger2openapi ./swagger.json -o ./openapi.json -p && openapi-typescript ./openapi.json -o ./src/api/schema.ts"
+    "generate-api-types": "swagger2openapi ./docs/swagger.json -o ./docs/openapi.json -p && openapi-typescript ./docs/openapi.json -o ./src/api/schema.ts"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",

@@ -5,7 +5,7 @@ import type { paths } from "@/api/schema";
 
 // Single typed entry point for the Supervision backend.
 // Rule 2: components consume hooks which call functions here.
-// Rule 3: `paths` is generated from swagger.json; never hand-edited.
+// Rule 3: `paths` is generated from docs/swagger.json; never hand-edited.
 
 const baseUrl =
   import.meta.env.VITE_API_BASE_URL ?? "https://localhost:8443";

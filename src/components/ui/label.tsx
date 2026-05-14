@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/cn";
 
-// .input-label from supervision-visual-system.html — uppercase mono eyebrow style.
+// .input-label from docs/supervision-visual-system.html — uppercase mono eyebrow style.
 const labelVariants = cva(
   "block font-mono text-[10.5px] font-semibold uppercase tracking-[0.06em] text-text-secondary leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 );

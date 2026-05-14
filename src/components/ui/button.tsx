@@ -5,13 +5,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 
 // Variants mirror .btn-primary / .btn-accent / .btn-secondary / .btn-ghost / .btn-danger
-// from supervision-visual-system.html. Sizes match heights 36 / 28 / 44 px.
+// from docs/supervision-visual-system.html. Sizes match heights 36 / 28 / 44 px.
 const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-[7px] whitespace-nowrap",
     "font-sans font-semibold tracking-[-0.005em]",
     "rounded border border-transparent",
-    "transition-all duration-[120ms] ease-[cubic-bezier(0.2,0,0,1)]",
+    "transition-all [transition-duration:120ms] [transition-timing-function:cubic-bezier(0.2,0,0,1)]",
     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
     "disabled:opacity-40 disabled:pointer-events-none",
     "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",

@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/cn";
 
-// .card from supervision-visual-system.html — canvas-raised over border-subtle,
+// .card from docs/supervision-visual-system.html — canvas-raised over border-subtle,
 // 6px radius (the "card" radius token), 16px padding (24px in comfortable variant).
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (

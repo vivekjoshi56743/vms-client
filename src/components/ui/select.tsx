@@ -4,7 +4,7 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 
-// .select / dropdown-panel from supervision-visual-system.html.
+// .select / dropdown-panel from docs/supervision-visual-system.html.
 
 const Select = SelectPrimitive.Root;
 const SelectGroup = SelectPrimitive.Group;
@@ -19,7 +19,7 @@ const SelectTrigger = React.forwardRef<
     className={cn(
       "flex h-9 w-full items-center justify-between gap-2 whitespace-nowrap rounded border border-border bg-surface-input px-3",
       "text-sm text-text-primary tracking-[-0.005em]",
-      "transition-colors duration-[120ms]",
+      "transition-colors [transition-duration:120ms]",
       "hover:border-border-strong",
       "focus:outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent-glow",
       "data-[placeholder]:text-text-tertiary",

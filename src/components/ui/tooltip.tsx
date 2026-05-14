@@ -3,7 +3,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
 import { cn } from "@/lib/cn";
 
-// .tt from supervision-visual-system.html — text-primary bg on canvas text.
+// .tt from docs/supervision-visual-system.html — text-primary bg on canvas text.
 const TooltipProvider = TooltipPrimitive.Provider;
 const Tooltip = TooltipPrimitive.Root;
 const TooltipTrigger = TooltipPrimitive.Trigger;

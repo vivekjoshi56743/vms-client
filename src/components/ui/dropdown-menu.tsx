@@ -6,7 +6,7 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 
-// .dropdown-panel / .dropdown-item from supervision-visual-system.html.
+// .dropdown-panel / .dropdown-item from docs/supervision-visual-system.html.
 // canvas-overlay panel, surface-hover items, accent-subtle selected.
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
