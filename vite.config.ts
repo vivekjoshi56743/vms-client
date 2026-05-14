@@ -15,6 +15,12 @@ export default defineConfig(async () => ({
     },
   },
 
+  build: {
+    // plan.md budget: < 5 MB JS. Raise Vite's advisory from the 500 KB default
+    // so the output is not noisy while we're still under budget.
+    chunkSizeWarningLimit: 1000,
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors
