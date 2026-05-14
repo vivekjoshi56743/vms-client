@@ -1,27 +1,55 @@
 import createClient, { type Middleware } from "openapi-fetch";
 
 import { useAuthStore } from "@/stores/auth";
+import { tauriFetch } from "@/api/tauri-fetch";
 import type { paths } from "@/api/schema";
 
 // Single typed entry point for the Supervision backend.
 // Rule 2: components consume hooks which call functions here.
 // Rule 3: `paths` is generated from docs/swagger.json; never hand-edited.
+//
+// Inside Tauri all requests are routed via `tauriFetch` → `tofu_http_request`
+// (src-tauri/src/tofu.rs) so the pinned-fingerprint rustls verifier actually
+// applies. In a plain browser dev session, `tauriFetch` falls back to the
+// global fetch and you'll need a backend with a browser-trusted cert.
 
-const baseUrl =
+const DEFAULT_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "https://localhost:8443";
 
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
-    const token = useAuthStore.getState().token;
+    const { token, serverUrl } = useAuthStore.getState();
     if (token) {
       request.headers.set("Authorization", `Bearer ${token}`);
+    }
+    // Rewrite the URL to point at the user-selected server. openapi-fetch
+    // builds the URL from `baseUrl + path`, but we want one client whose
+    // base URL tracks the auth store (so changing servers doesn't need a
+    // QueryClient reset). We swap origin here.
+    if (serverUrl) {
+      const desired = new URL(serverUrl);
+      const current = new URL(request.url);
+      if (current.origin !== desired.origin) {
+        const rewritten = new URL(
+          current.pathname + current.search + current.hash,
+          desired
+        );
+        return new Request(rewritten, request);
+      }
     }
     return request;
   },
 };
 
-export const client = createClient<paths>({ baseUrl });
+export const client = createClient<paths>({
+  baseUrl: DEFAULT_BASE_URL,
+  fetch: tauriFetch,
+});
 client.use(authMiddleware);
+
+export function getActiveServerUrl(): string {
+  return useAuthStore.getState().serverUrl ?? DEFAULT_BASE_URL;
+}
 
 export class APIError extends Error {
   constructor(

@@ -23,3 +23,20 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# TOFU TLS: we own the HTTP client so we can install a custom rustls cert
+# verifier that pins per-host SHA-256 fingerprints. reqwest must use rustls
+# (NOT native-tls) so the custom verifier is honored.
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-manual-roots", "json", "stream", "http2"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+sha2 = "0.10"
+hex = "0.4"
+x509-parser = "0.16"
+tokio = { version = "1", features = ["sync", "fs", "net", "io-util"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
+thiserror = "1"
+url = "2"
+
+# OS keychain — macOS Keychain, Windows Credential Manager, Linux Secret Service.
+# Used by the secure_store commands to keep the session token out of localStorage.
+keyring = "3"
+
