@@ -1,11 +1,15 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
+import { cn } from "@/lib/cn";
 
 interface AppShellProps {
   title?: string;
   actions?: ReactNode;
   children: ReactNode;
+  /** Override the main element's overflow class. Use "overflow-hidden" for
+   *  pages that manage their own scrolling (e.g. LivePage with VideoGrid). */
+  mainClassName?: string;
 }
 
 // Root layout for every authenticated page:
@@ -21,13 +25,13 @@ interface AppShellProps {
 // Sidebar width transitions via CSS (200 ease-in-out) and is persisted to
 // localStorage by the UI store (Rule 6: client-only state in Zustand).
 
-export function AppShell({ title, actions, children }: AppShellProps) {
+export function AppShell({ title, actions, children, mainClassName }: AppShellProps) {
   return (
     <div className="flex h-screen overflow-hidden bg-canvas text-text-primary">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar title={title} actions={actions} />
-        <main className="flex-1 overflow-y-auto">
+        <main className={cn("flex-1", mainClassName ?? "overflow-y-auto")}>
           {children}
         </main>
       </div>

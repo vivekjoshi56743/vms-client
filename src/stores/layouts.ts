@@ -32,6 +32,7 @@ interface LayoutsState {
   setSlot: (layoutId: string, slotIndex: number, cameraId: string | null) => void;
   setSize: (layoutId: string, size: GridSize) => void;
   createLayout: (name: string, size: GridSize) => void;
+  deleteLayout: (id: string) => void;
   /** Seed with camera IDs on first load if no layouts exist yet. */
   ensureDefault: (cameraIds: string[]) => void;
 }
@@ -72,6 +73,16 @@ export const useLayoutsStore = create<LayoutsState>()(
           activeId: s.activeId ?? id,
         }));
       },
+
+      deleteLayout: (id) =>
+        set((s) => {
+          const remaining = s.layouts.filter((l) => l.id !== id);
+          const activeId =
+            s.activeId === id
+              ? (remaining[0]?.id ?? null)
+              : s.activeId;
+          return { layouts: remaining, activeId };
+        }),
 
       ensureDefault: (cameraIds) => {
         if (get().layouts.length > 0) return;
