@@ -65,6 +65,10 @@
   --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.12);
 
   --backdrop: rgba(0, 0, 0, 0.5);
+
+  --server-1: #0891B2;
+  --server-2: #A855F7;
+  --server-3: #F59E0B;
 }
 
 /* Dark standard */
@@ -125,6 +129,10 @@
   --shadow-xl: 0 40px 80px rgba(0, 0, 0, 0.7);
 
   --backdrop: rgba(0, 0, 0, 0.65);
+
+  --server-1: #22D3EE;
+  --server-2: #C084FC;
+  --server-3: #FBBF24;
 }
 
 /* Surveillance mode (overlays dark) */
@@ -185,4 +193,8 @@
   --shadow-xl: 0 40px 80px rgba(0, 0, 0, 0.7);
 
   --backdrop: rgba(0, 0, 0, 0.85);
+
+  --server-1: #22D3EE;
+  --server-2: #C084FC;
+  --server-3: #FBBF24;
 }

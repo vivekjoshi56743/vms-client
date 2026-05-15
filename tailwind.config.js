@@ -58,6 +58,11 @@ export default {
         "status-offline": "var(--status-offline)",
         "status-offline-subtle": "var(--status-offline-subtle)",
 
+        // Server color-coding
+        "server-1": "var(--server-1)",
+        "server-2": "var(--server-2)",
+        "server-3": "var(--server-3)",
+
         // Video chrome
         "video-chrome-bg": "var(--video-chrome-bg)",
         "video-chrome-text": "var(--video-chrome-text)",
