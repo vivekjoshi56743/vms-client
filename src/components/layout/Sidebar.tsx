@@ -156,6 +156,23 @@ export function Sidebar() {
         ))}
       </nav>
 
+      {/* Collapse toggle */}
+      <div className="flex-shrink-0 border-t border-border-subtle px-2 py-1.5">
+        <button
+          onClick={toggleSidebar}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={cn(
+            "flex w-full items-center rounded px-2 py-1.5",
+            "text-text-tertiary transition-colors duration-[120ms] hover:bg-surface hover:text-text-primary",
+            collapsed ? "justify-center" : "justify-end"
+          )}
+        >
+          {collapsed
+            ? <ChevronRight className="h-3.5 w-3.5" />
+            : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+
       {/* Footer: user info + logout */}
       <div className="flex-shrink-0 border-t border-border-subtle px-2 py-2">
         {user && !collapsed && (
@@ -187,23 +204,6 @@ export function Sidebar() {
           </TooltipTrigger>
           {collapsed && <TooltipContent side="right">Sign out</TooltipContent>}
         </Tooltip>
-      </div>
-
-      {/* Collapse toggle */}
-      <div className="flex-shrink-0 border-t border-border-subtle px-2 py-1.5">
-        <button
-          onClick={toggleSidebar}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={cn(
-            "flex w-full items-center rounded px-2 py-1.5",
-            "text-text-tertiary transition-colors duration-[120ms] hover:bg-surface hover:text-text-primary",
-            collapsed ? "justify-center" : "justify-end"
-          )}
-        >
-          {collapsed
-            ? <ChevronRight className="h-3.5 w-3.5" />
-            : <ChevronLeft className="h-3.5 w-3.5" />}
-        </button>
       </div>
     </aside>
   );

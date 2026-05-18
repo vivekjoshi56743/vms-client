@@ -14,7 +14,17 @@ import { isTauri } from "@/lib/fingerprint";
 interface TauriHttpResponse {
   status: number;
   headers: Array<[string, string]>;
-  body: string;
+  /** base64-encoded raw response bytes — see src-tauri/src/tofu.rs */
+  body_b64: string;
+}
+
+// Decode a base64 string to a Uint8Array. atob() is fast enough for our
+// needs (a few MB blobs at most) and avoids pulling a base64 library.
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
 interface TauriHttpRequest {
@@ -86,7 +96,11 @@ export const tauriFetch: typeof fetch = async (input, init) => {
   for (const [k, v] of resp.headers) {
     try { respHeaders.append(k, v); } catch { /* ignore malformed headers */ }
   }
-  return new Response(resp.body, { status: resp.status, headers: respHeaders });
+  // Rust always returns base64 raw bytes (the response may be binary — fMP4,
+  // images, etc.). Decode to a Uint8Array; the Response constructor accepts
+  // BufferSource. JSON callers can still .text() / .json() on this.
+  const bytes = base64ToBytes(resp.body_b64);
+  return new Response(bytes, { status: resp.status, headers: respHeaders });
 };
 
 async function bodyToString(body: BodyInit): Promise<string> {

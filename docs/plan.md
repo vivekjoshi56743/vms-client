@@ -532,3 +532,299 @@ Build the api → hooks → components layering even when the page is trivial. U
 The cost of these abstractions in V1 is small. The cost of NOT having them when V1.5 lands with PTZ, incidents, surveillance mode, and multi-server federation is enormous refactoring.
 
 Build the right shape from day one. Ship the simplest implementation inside that shape.
+
+---
+
+## 11. Deferred Technical Work (post-V1 backlog)
+
+Items discovered during V1 development that are deliberately deferred. Each entry records the root cause, what was shipped as the interim solution, and exactly what both sides need to do to fully resolve it.
+
+---
+
+### TD-001 — H.265 camera support on Linux / full WebRTC support for H.265 cameras
+
+**Status:** Deferred. Partially mitigated client-side.
+
+**Root cause:**
+WebRTC (WHEP) only supports H.264, VP8, VP9, and AV1. H.265 (HEVC) is excluded from the WebRTC spec entirely due to patent licensing issues. MediaMTX returns `400 — the stream doesn't contain any supported codec` when a WHEP offer arrives for an H.265 source.
+
+Additionally, H.265 in HLS (via fMP4 container) is only hardware-decodable on macOS (WKWebView) and Windows (WebView2/Chromium). **WebKitGTK (Linux Tauri target) has no H.265 decoder** — H.265 cameras will show a black screen on Linux even if the HLS request succeeds.
+
+**What is shipped (interim):**
+- `connectWhep` in `src/lib/whep.ts` tags 400 responses that mention "codec" with `err.whepUnsupportedCodec = true`.
+- `VideoPlayer` / `WhepPlayer` detect that flag and silently switch to `hlsFallback` (the HLS URL) without showing an error overlay to the user.
+- `LivePage` always passes both `url` (WHEP preferred) and `hlsFallback` (HLS) to `VideoTile`.
+- Result: H.264 cameras → WHEP (<500ms latency). H.265 cameras → auto-fallback to HLS (~2-3s latency) on macOS/Windows. Linux: H.265 cameras are broken (black screen).
+
+**Server-side work needed (Go backend + MediaMTX):**
+1. Add an optional FFmpeg transcoding pipeline in `mediamtx.yml`. When a camera is registered with `codec: h265` (or auto-detected), configure a `runOnReady` hook that re-encodes the RTSP source to H.264 before MediaMTX ingests it:
+   ```yaml
+   paths:
+     cam-~:
+       runOnReady: ffmpeg -i rtsp://localhost:8554/${MTX_PATH}
+                         -vcodec libx264 -preset ultrafast -tune zerolatency
+                         -f rtsp rtsp://localhost:8554/${MTX_PATH}-h264
+   ```
+2. Expose a `codec` field in the `POST /api/cameras/{id}/stream` response so the client can pick the right protocol upfront without attempting WHEP and eating a round-trip failure.
+3. Alternatively: configure MediaMTX `webrtcEncodeH265: true` if/when MediaMTX ships H.265-over-WebRTC support (tracked upstream: mediamtx/mediamtx#issues).
+
+**Client-side work needed:**
+1. In `src/api/streams.ts` / `StreamURLs`, add `codec?: "h264" | "h265" | null` once the backend exposes it.
+2. In `src/pages/LivePage.tsx` (and future `VideoGrid`), use `codec` to skip the WHEP attempt entirely for H.265 cameras rather than relying on the error-based fallback:
+   ```ts
+   const videoUrl = (stream.data?.codec === "h265")
+     ? stream.data.hls
+     : stream.data?.webrtc ?? stream.data?.hls ?? null;
+   ```
+3. On Linux (detect via `navigator.platform` or Tauri OS API), warn the user if an H.265 camera is selected and no transcoded H.264 stream is available, instead of silently showing black.
+
+**Performance note:** FFmpeg transcoding H.265 → H.264 costs roughly 1 CPU core per 1080p stream at `ultrafast` preset. Plan server hardware accordingly for large camera counts.
+
+---
+
+### TD-002 — Low Latency HLS (LL-HLS) for H.265 cameras
+
+**Status:** Deferred. Standard HLS currently ships (~2-3s latency).
+
+**Root cause:**
+H.265 cameras fall back to HLS (see TD-001). Standard HLS has 2-6s latency because the player must buffer at least one full segment. MediaMTX supports Low Latency HLS (partial segments, ~200ms chunks), which brings latency to ~1-2s, but it must be explicitly enabled.
+
+**What is shipped (interim):**
+hls.js is configured with aggressive catch-up settings (`liveSyncDuration: 1`, `liveMaxLatencyDuration: 4`, `maxBufferLength: 4`) to minimise drift, but the floor is still ~2-3s because MediaMTX emits full 2s segments by default.
+
+**Server-side work needed:**
+Enable LL-HLS in `mediamtx.yml`:
+```yaml
+hls:
+  llhls: yes
+  segmentDuration: 1s      # reduce from default 2s
+  partDuration: 200ms      # partial segment size for LL-HLS
+  segmentCount: 3
+```
+
+**Client-side work needed:**
+None — hls.js `lowLatencyMode: true` (already set in `HlsPlayer`) automatically detects and uses LL-HLS playlists when the server advertises them. No code changes required once the server is configured.
+
+**Expected result after server change:** ~1-2s latency for H.265 cameras on macOS/Windows.
+
+---
+
+## 12. UI Overhaul — Align to Mockup (supervision-mockup.vercel.app)
+
+The visual reference mockup was reviewed and fully extracted on 2026-05-15. All component dimensions, token values, and layout patterns have been saved to memory (`reference_mockup_design_system.md`). This section documents every delta between the current implementation and the mockup, prioritised into implementation tasks.
+
+**Mockup URL:** https://supervision-mockup.vercel.app/  
+**Token status:** `src/styles/tokens.css` already matches the mockup exactly. Only additive changes needed.
+
+---
+
+### UI-001 — Add missing CSS tokens (server color-coding)
+
+**Priority:** High — needed by Dashboard "Connected servers" section and future multi-server views.
+
+**Changes to `src/styles/tokens.css`:**
+Add `--server-1`, `--server-2`, `--server-3` to all three theme blocks:
+
+```css
+/* Light */
+--server-1: #0891B2;
+--server-2: #A855F7;
+--server-3: #F59E0B;
+
+/* Dark standard + surveillance */
+--server-1: #22D3EE;
+--server-2: #C084FC;
+--server-3: #FBBF24;
+```
+
+**Changes to `tailwind.config.js`:** Map to `server-1`, `server-2`, `server-3` utility classes.
+
+---
+
+### UI-002 — Sidebar rebuild
+
+**Priority:** High — visible on every page.
+
+**Dimensions:** Width → 228px (currently 220px). Keep 56px collapsed.
+
+**Brand mark changes:**
+- "Super" in `text-text-primary` bold + "vision" in `text-accent` (cyan) — two-tone wordmark
+- Small pulsing dot after the wordmark: `--status-online` with `brand-live-pulse` animation
+- Remove current icon-only brand mark, replace with the two-tone text
+
+**Nav structure — add section groups:**
+```
+OPERATIONS        ← mono 10px 600 uppercase tracking-[0.1em] text-tertiary, py-3 px-5
+  Home            ← /dashboard, LayoutDashboard icon
+  Live            ← /live, Video icon
+  Playback        ← /playback, Film icon
+  Events          ← /events, Bell icon + red count badge (stub: 0)
+  Incidents       ← /incidents, Shield icon + red count badge (stub: 0)
+
+INFRASTRUCTURE
+  Health          ← /health, Activity icon + red count badge from useAllCameraHealth
+  Audit log       ← /audit, FileText icon (stub page, redirect to dashboard)
+
+MANAGE
+  Cameras         ← /cameras, Camera icon
+  Users & roles   ← /settings/users, Users icon
+  Connections     ← /settings, Plug icon
+```
+
+**Active state:** `bg-accent-subtle text-accent-text font-medium` (currently `bg-surface text-text-primary`)
+
+**Count badges:** Inline `<span>` pill — `bg-status-critical text-white font-mono text-[10px] rounded-full px-1.5 min-w-[18px] text-center`. Live badge count for Health comes from `useAllCameraHealth` counting offline/degraded cameras. Events/Incidents are stubs returning 0 until backend events API (Phase F11/F12).
+
+**Collapsed state:** Section labels hidden, badges shown as dots on icons.
+
+---
+
+### UI-003 — TopBar rebuild
+
+**Priority:** High — visible on every page.
+
+**Height:** 52px (currently h-16 = 64px).
+
+**Layout (left → right):**
+1. **Left slot:** page title (keep existing slot — used by page actions)
+2. **Center:** Search bar — `width: 300px, max-w-[40vw]`, `h-8`, `bg-surface-input border border-border rounded`, left Search icon (16px, text-tertiary), right `kbd` badge showing `⌘K` — stub (no actual search in V1, just visual)
+3. **Right slot (gap-2):**
+   - Camera status pill — `inline-flex items-center gap-1.5 h-7 px-3 rounded bg-status-critical-subtle border border-status-critical/30 font-mono text-[11px] text-status-critical` — shows count of offline cameras from `useAllCameraHealth`. Hidden when all online.
+   - Theme toggle (keep existing icon button)
+   - Bell icon button (stub, no action)
+   - User pill — `inline-flex items-center gap-2 h-8 px-2 rounded hover:bg-surface cursor-pointer` — avatar circle (initials, cyan gradient `from-accent to-accent-active`) + username from `useAuthStore`
+
+---
+
+### UI-004 — VideoTile chrome redesign
+
+**Priority:** High — core VMS experience.
+
+**Current chrome:** camera name top-left, LIVE badge top-right, health dot bottom-left.
+
+**Mockup chrome:**
+
+Top-left pill (`.video-camera-tag`):
+```
+[status-dot] [CAMERA_NAME] [LOCATION_BADGE]
+```
+- Status dot: 6px circle, `bg-video-online-dot` or `bg-video-offline-dot`
+- Camera name: JetBrains Mono 11px 600 uppercase
+- Location badge: tiny pill `bg-accent-subtle text-accent-text font-mono text-[9px]` showing `camera.driver_type` or a location tag (use `camera.name` suffix if it contains `_` — e.g. `N_BR_ENTRANCE` → `N.BR`)
+- Container: `bg-video-chrome-bg backdrop-blur-sm border border-video-chrome-border rounded-[3px] px-2 py-0.5`
+
+Top-right: timestamp pill
+- Current time (updates every second) — `HH:mm:ss` in JetBrains Mono 10.5px 500
+- Same pill style as camera tag
+
+Bottom-left: REC badge
+- `bg-video-chrome-bg border border-video-chrome-border rounded-[2px] px-1.5 py-0.5 inline-flex gap-1.5 items-center`
+- 5px red dot + "REC" text font-mono 10px — always shown when `playerState === "playing"`
+
+Bottom-right: expand icon (stub — no fullscreen in V1, just visual)
+
+Corner brackets (all 4):
+- `absolute 6px from respective corner`
+- `12×12 border-[rgba(244,244,245,0.59)]`
+- Top-left: `border-t border-l`, top-right: `border-t border-r`, etc.
+- On critical health: brackets and tile border turn `--status-critical`
+
+**Also:** Remove standalone `LiveBadge` from top-right — timestamp replaces it. LIVE state is implied by the stream playing.
+
+**New `VideoTile` props needed:**
+- `showRec?: boolean` — default true when playing
+- `alertLevel?: "warning" | "critical" | null` — drives corner bracket color + tile border
+
+---
+
+### UI-005 — VideoGrid + LivePage layout rebuild (Phase F8)
+
+**Priority:** High — next phase.
+
+This is the F8 VideoGrid work, now with the full mockup spec:
+
+**Left panel (`LayoutsPanel`, ~260px fixed):**
+- "Layouts" heading + count badge
+- Search input (stub)
+- Scrollable list of `LayoutCard` components:
+  - Preview thumbnail (CSS grid of colored squares)
+  - Layout name + active indicator
+  - Sub-text: `{cols}×{rows} · {n} cameras · location`
+  - Click to select
+- "+ NEW LAYOUT" button (stub in V1 — just creates a default 2×2)
+
+**Layout data:** Zustand store (`src/stores/ui.ts` — extend or create `src/stores/layouts.ts`):
+```ts
+type GridSize = "1x1" | "2x2" | "3x3" | "4x4"
+type Layout = { id: string; name: string; size: GridSize; slots: (string | null)[] }
+```
+Persist in localStorage. Pre-populate with one default layout using all cameras.
+
+**Grid selector pills (top-right of main area):**
+`1×1 | 2×2 | 3×3 | 4×4` — active: `bg-accent-subtle text-accent-text`, inactive: `bg-surface text-text-secondary border border-border`
+
+**Surveillance button:** Triggers `setTheme("dark-surveillance")` — exists in UIStore already.
+
+**VideoGrid component (`src/components/video/VideoGrid.tsx`):**
+- Accepts `size: GridSize` + `slots: (string | null)[]` (camera IDs or null)
+- Renders CSS grid with gap-1
+- Each slot: if camera ID → `<VideoTile>` with stream; if null → `<EmptySlot>` with click-to-assign
+- `EmptySlot`: dark bg, camera-off icon, "Click to assign" text
+
+**Camera assignment:** Click empty slot → small popover with camera list → select → store slot assignment.
+
+**Pagination:** `Page X of Y · 1-N of N cameras` footer — shown when camera count exceeds slots.
+
+**Done when:** Can view a 3×3 grid of 9 cameras simultaneously.
+
+---
+
+### UI-006 — DashboardPage rebuild
+
+**Priority:** Medium — after F8.
+
+Replace current stub with the full mockup layout:
+
+**Sections:**
+1. **Greeting**: "Good afternoon, {username}" — Inter 30px 600. Use time-of-day logic (morning/afternoon/evening).
+2. **Pinned cameras strip**: `PINNED CAMERAS · N OF TOTAL` eyebrow + Edit. Row of camera tiles (horizontal scroll, fixed height 160px). "Pin" concept = first N cameras from list for V1 (no pin API yet — stub with first 4).
+3. **Stats row** (4 cards, equal-width):
+   - **Cameras Online**: count from `useAllCameraHealth` — online vs total
+   - **NVRs Online**: stub "1 / 1" in V1 (no NVR API)
+   - **Recording**: count recording-enabled cameras from `useCameras`
+   - **Open Incidents**: stub "0" in V1 (no incidents API)
+   - Each card: eyebrow label + big number (JetBrains Mono 42px) + trend sub-line
+4. **Activity feed**: "SINCE YOUR LAST VISIT" — stub with 1-2 static items in V1; replace with real events in Phase F12.
+5. **Connected servers**: single server card showing server URL, camera count, uptime (from `useAllCameraHealth`). Server color: `--server-1`.
+
+---
+
+### UI-007 — Splash / loading screen
+
+**Priority:** Low — polish only, does not affect function.
+
+The mockup has a branded splash screen shown at cold start (before the React app renders or during `AuthInitializer` loading).
+
+**Implementation:** In `App.tsx`, while `AuthInitializer` has `ready === false`, render a full-screen splash:
+- Dark `bg-canvas-deep` background with 24px dot grid pattern (CSS `radial-gradient`)
+- "**Super**<span accent>vision</span>" wordmark at 60px — floating animation
+- Orbital ring animation (pure CSS, no canvas) with 6 camera icons
+- Progress bar `bg-accent h-[2px]` animating from 0→100% over ~1.5s
+- "CONNECTING" label + status text below bar
+- "ESTABLISHING LIVE FEEDS" footer
+
+---
+
+### Implementation Order
+
+```
+UI-001  tokens (15 min)          → do immediately, no visual risk
+UI-002  Sidebar (2h)             → section groups, active state, brand
+UI-003  TopBar (1.5h)            → search stub, camera pill, user pill
+UI-004  VideoTile chrome (2h)    → timestamp, REC, corner brackets
+UI-005  VideoGrid + LivePage (1 day)  → F8, the next phase
+UI-006  Dashboard (half day)     → F9 UI, after F8
+UI-007  Splash (1h)              → last, pure polish
+```
+
+Total estimated: ~2 days of focused work across UI-001 through UI-006.

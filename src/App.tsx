@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { Splash } from "@/components/layout/Splash";
 import { CamerasPage } from "@/pages/CamerasPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { HealthPage } from "@/pages/HealthPage";
@@ -62,7 +63,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!ready) return null;
+  if (!ready) return <Splash />;
   return <>{children}</>;
 }
 

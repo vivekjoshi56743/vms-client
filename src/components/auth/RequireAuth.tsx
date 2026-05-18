@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
-import { useIsAuthenticated } from "@/hooks/useAuth";
+import { useCurrentUser, useIsAuthenticated } from "@/hooks/useAuth";
 
 // Route guard: any nested element bounces to /login (carrying the
 // originally-requested path) when there's no valid session.
@@ -9,6 +9,8 @@ import { useIsAuthenticated } from "@/hooks/useAuth";
 export function RequireAuth({ children }: { children: ReactNode }) {
   const isAuthed = useIsAuthenticated();
   const location = useLocation();
+  // Keeps auth store's `user` populated across page loads.
+  useCurrentUser();
   if (!isAuthed) {
     return (
       <Navigate

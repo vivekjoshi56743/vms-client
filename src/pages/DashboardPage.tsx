@@ -3,7 +3,7 @@ import { Camera, Activity, Video, ArrowRight } from "lucide-react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { useAuthStore } from "@/stores/auth";
-import { useCameras, useAllCameraHealth } from "@/hooks/useCameras";
+import { useCameras, useAllCameraHealth, useSystemHealth } from "@/hooks/useCameras";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -21,6 +21,7 @@ export function DashboardPage() {
   const serverUrl = useAuthStore((s) => s.serverUrl);
   const cameras = useCameras();
   const health = useAllCameraHealth();
+  const serverHealth = useSystemHealth();
 
   const totalCameras = cameras.data?.length ?? 0;
   const onlineCount = health.data?.filter((h) => h.status === "online").length ?? 0;
@@ -69,11 +70,17 @@ export function DashboardPage() {
             trend={{ label: "No open incidents", variant: "neutral" }}
           />
           <StatCard
-            eyebrow="NVRs Online"
+            eyebrow="Server"
             icon={Video}
-            value={1}
+            value={serverHealth.isError ? 0 : 1}
             total={1}
-            trend={{ label: "All connected", variant: "positive" }}
+            trend={
+              serverHealth.isLoading
+                ? { label: "Checking…", variant: "neutral" }
+                : serverHealth.isError
+                  ? { label: "Unreachable", variant: "negative" }
+                  : { label: "Connected", variant: "positive" }
+            }
           />
         </div>
 

@@ -9,8 +9,10 @@ import { connectWhep, type WhepSession } from "@/lib/whep";
 export type PlayerState = "idle" | "connecting" | "playing" | "error";
 
 interface Props {
-  /** WHEP URL, HLS .m3u8, direct mp4/fmp4, or null for idle. */
+  /** Primary stream URL: WHEP, HLS .m3u8, or fMP4. */
   url: string | null;
+  /** HLS URL to fall back to if WHEP fails due to an unsupported codec. */
+  hlsFallback?: string | null;
   className?: string;
   /** Called when playback state changes. */
   onStateChange?: (state: PlayerState) => void;
@@ -33,6 +35,7 @@ function detectKind(url: string): UrlKind {
 
 export function VideoPlayer({
   url,
+  hlsFallback,
   className,
   onStateChange,
   muted = true,
@@ -41,6 +44,9 @@ export function VideoPlayer({
   const [state, setState] = useState<PlayerState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  // When WHEP fails due to an unsupported codec (e.g. H.265), silently
+  // re-render using the HLS fallback URL instead of showing an error.
+  const [hlsFallbackUrl, setHlsFallbackUrl] = useState<string | null>(null);
 
   const updateState = useCallback(
     (s: PlayerState) => {
@@ -60,15 +66,22 @@ export function VideoPlayer({
     );
   }
 
-  const kind = detectKind(url);
+  const activeUrl = hlsFallbackUrl ?? url;
+  const kind = detectKind(activeUrl);
 
-  function handleError(msg: string) {
+  function handleError(msg: string, opts?: { whepUnsupportedCodec?: boolean; hlsFallback?: string }) {
+    if (opts?.whepUnsupportedCodec && opts.hlsFallback) {
+      // Codec mismatch — fall back to HLS without surfacing an error.
+      setHlsFallbackUrl(opts.hlsFallback);
+      return;
+    }
     setError(msg);
     updateState("error");
   }
 
   function handleRetry() {
     setError(null);
+    setHlsFallbackUrl(null);
     updateState("connecting");
     setRetryKey((k) => k + 1);
   }
@@ -78,8 +91,9 @@ export function VideoPlayer({
       {/* Player layer */}
       {kind === "whep" && (
         <WhepPlayer
-          key={`whep-${url}-${retryKey}`}
-          url={url}
+          key={`whep-${activeUrl}-${retryKey}`}
+          url={activeUrl}
+          hlsFallback={hlsFallback ?? undefined}
           muted={muted}
           onPlaying={() => updateState("playing")}
           onConnecting={() => updateState("connecting")}
@@ -88,8 +102,8 @@ export function VideoPlayer({
       )}
       {kind === "hls" && (
         <HlsPlayer
-          key={`hls-${url}-${retryKey}`}
-          url={url}
+          key={`hls-${activeUrl}-${retryKey}`}
+          url={activeUrl}
           muted={muted}
           controls={controls}
           onPlaying={() => updateState("playing")}
@@ -99,8 +113,8 @@ export function VideoPlayer({
       )}
       {(kind === "native" || kind === "unknown") && (
         <NativePlayer
-          key={`native-${url}-${retryKey}`}
-          url={url}
+          key={`native-${activeUrl}-${retryKey}`}
+          url={activeUrl}
           muted={muted}
           controls={controls}
           onPlaying={() => updateState("playing")}
@@ -144,16 +158,18 @@ export function VideoPlayer({
 
 function WhepPlayer({
   url,
+  hlsFallback,
   muted,
   onPlaying,
   onConnecting,
   onError,
 }: {
   url: string;
+  hlsFallback?: string;
   muted: boolean;
   onPlaying: () => void;
   onConnecting: () => void;
-  onError: (msg: string) => void;
+  onError: (msg: string, opts?: { whepUnsupportedCodec?: boolean; hlsFallback?: string }) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sessionRef = useRef<WhepSession | null>(null);
@@ -168,12 +184,18 @@ function WhepPlayer({
         if (cancelled) return;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {/* autoplay blocked — user must interact */});
+          videoRef.current.play().catch(() => {/* autoplay blocked */});
         }
         onPlaying();
       },
       (err) => {
-        if (!cancelled) onError(err.message);
+        if (cancelled) return;
+        const e = err as Error & { whepUnsupportedCodec?: boolean };
+        if (e.whepUnsupportedCodec && hlsFallback) {
+          onError(err.message, { whepUnsupportedCodec: true, hlsFallback });
+        } else {
+          onError(err.message);
+        }
       }
     )
       .then((session) => {
@@ -184,7 +206,13 @@ function WhepPlayer({
         }
       })
       .catch((err: Error) => {
-        if (!cancelled) onError(err.message);
+        if (cancelled) return;
+        const e = err as Error & { whepUnsupportedCodec?: boolean };
+        if (e.whepUnsupportedCodec && hlsFallback) {
+          onError(err.message, { whepUnsupportedCodec: true, hlsFallback });
+        } else {
+          onError(err.message);
+        }
       });
 
     return () => {
@@ -233,7 +261,12 @@ function HlsPlayer({
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-        backBufferLength: 30,
+        // Minimise live latency: stay 1 segment behind live edge, skip forward
+        // if we fall more than 4 s behind, cap the buffer to 4 s.
+        liveSyncDuration: 1,
+        liveMaxLatencyDuration: 4,
+        maxBufferLength: 4,
+        backBufferLength: 4,
       });
       hls.loadSource(url);
       hls.attachMedia(el);

@@ -20,18 +20,19 @@ export interface WhepSession {
 export async function connectWhep(
   url: string,
   onStream: (stream: MediaStream) => void,
-  onError: (err: Error) => void
+  onError: (err: Error) => void,
+  { audio = false }: { audio?: boolean } = {}
 ): Promise<WhepSession> {
   const pc = new RTCPeerConnection({
-    // LAN-only deployment: no STUN/TURN needed. ICE host candidates resolve
-    // directly. Add servers here when deploying across NAT.
+    // LAN-only deployment: no STUN/TURN needed.
     iceServers: [],
-    bundlePolicy: "max-bundle",
   });
 
-  // Receive video + audio.
+  // Video-only by default — most camera RTSP streams carry no audio track.
+  // MediaMTX returns 400 when the SDP offer includes an audio m= line but the
+  // source stream is video-only. Pass audio:true if the stream has audio.
   pc.addTransceiver("video", { direction: "recvonly" });
-  pc.addTransceiver("audio", { direction: "recvonly" });
+  if (audio) pc.addTransceiver("audio", { direction: "recvonly" });
 
   // Collect all remote tracks into a MediaStream and surface it.
   const remoteStream = new MediaStream();
@@ -64,15 +65,27 @@ export async function connectWhep(
   try {
     resp = await fetch(url, {
       method:  "POST",
-      headers: { "Content-Type": "application/sdp" },
-      body:    sdpOffer,
+      headers: {
+        "Content-Type": "application/sdp",
+        "Accept":       "application/sdp",
+      },
+      body: sdpOffer,
     });
   } catch (e) {
     throw new Error(`WHEP signaling failed: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   if (!resp.ok) {
-    throw new Error(`WHEP: server returned ${resp.status} ${resp.statusText}`);
+    const body = await resp.text().catch(() => "");
+    const err = new Error(
+      `WHEP: server returned ${resp.status} ${resp.statusText}${body ? ` — ${body.trim()}` : ""}`
+    ) as Error & { whepUnsupportedCodec?: boolean };
+    // Flag codec-incompatibility so callers can fall back to HLS without
+    // showing an error to the user — it's expected for H.265 cameras.
+    if (resp.status === 400 && body.toLowerCase().includes("codec")) {
+      err.whepUnsupportedCodec = true;
+    }
+    throw err;
   }
 
   const sdpAnswer = await resp.text();

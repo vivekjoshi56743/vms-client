@@ -21,6 +21,7 @@ use rustls::client::danger::{
 use rustls::crypto::{verify_tls12_signature, verify_tls13_signature, CryptoProvider};
 use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
 use rustls::{DigitallySignedStruct, Error as RustlsError, SignatureScheme};
+use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager, State};
@@ -539,9 +540,11 @@ pub struct HttpRequest {
 pub struct HttpResponse {
     pub status: u16,
     pub headers: Vec<(String, String)>,
-    /// Always utf-8. If the response body isn't valid utf-8, we return an
-    /// error rather than guess — the API surface is JSON-only.
-    pub body: String,
+    /// Response body. Always base64-encoded raw bytes — the JS side decodes
+    /// before handing it to a Response constructor. We can't return UTF-8
+    /// here because real responses include binary payloads (fMP4, images,
+    /// future file downloads).
+    pub body_b64: String,
 }
 
 #[tauri::command]
@@ -579,11 +582,13 @@ pub async fn tofu_http_request(
         .bytes()
         .await
         .map_err(|e| TofuError::Http(e.to_string()))?;
-    let body = String::from_utf8(body_bytes.to_vec()).map_err(|_| TofuError::BadBody)?;
+    let body_b64 = base64::engine::general_purpose::STANDARD.encode(&body_bytes);
 
     Ok(HttpResponse {
         status,
         headers,
-        body,
+        body_b64,
     })
 }
+
+

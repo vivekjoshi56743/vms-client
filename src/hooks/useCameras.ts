@@ -10,7 +10,7 @@ import {
   type CreateCameraInput,
   type PatchCameraInput,
 } from "@/api/cameras";
-import { getAllCameraHealth, getCameraHealth } from "@/api/health";
+import { getAllCameraHealth, getCameraHealth, getSystemHealth } from "@/api/health";
 
 // ─── Cameras ─────────────────────────────────────────────────────────────────
 
@@ -91,7 +91,7 @@ export function useAllCameraHealth() {
   return useQuery({
     queryKey: ["cameras", "health"],
     queryFn: getAllCameraHealth,
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
   });
 }
 
@@ -100,6 +100,15 @@ export function useCameraHealth(id: string) {
     queryKey: ["cameras", id, "health"],
     queryFn: () => getCameraHealth(id),
     enabled: !!id,
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
+  });
+}
+
+export function useSystemHealth() {
+  return useQuery({
+    queryKey: ["system", "health"],
+    queryFn: getSystemHealth,
+    refetchInterval: 30_000,
+    retry: false,
   });
 }
