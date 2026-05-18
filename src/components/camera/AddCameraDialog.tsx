@@ -16,7 +16,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -159,10 +158,10 @@ export function AddCameraDialog({ open, onOpenChange }: Props) {
               />
             </div>
 
-            <FormDescription className="text-[11px]">
+            <p className="text-[11px] leading-relaxed text-text-tertiary">
               Credentials are stored on the server and used only for RTSP
               authentication. They are not stored locally.
-            </FormDescription>
+            </p>
           </form>
         </Form>
 
