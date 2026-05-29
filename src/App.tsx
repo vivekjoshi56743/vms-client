@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { RouteErrorBoundary } from "@/components/ErrorBoundary";
 import { Splash } from "@/components/layout/Splash";
 import { CamerasPage } from "@/pages/CamerasPage";
 import { DashboardPage } from "@/pages/DashboardPage";
@@ -90,11 +91,13 @@ function App() {
         <ThemeBootstrap />
         <AuthInitializer>
           <HashRouter>
-            <Routes>
-              <Route path="/login"      element={<LoginPage />} />
-              <Route path="/playground" element={<Playground />} />
-              <Route path="/*"          element={<AuthedRoutes />} />
-            </Routes>
+            <RouteErrorBoundary>
+              <Routes>
+                <Route path="/login"      element={<LoginPage />} />
+                <Route path="/playground" element={<Playground />} />
+                <Route path="/*"          element={<AuthedRoutes />} />
+              </Routes>
+            </RouteErrorBoundary>
           </HashRouter>
         </AuthInitializer>
         <Toaster />

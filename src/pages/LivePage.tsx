@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Monitor, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Plus, Monitor, X, Camera, VideoOff } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { AppShell } from "@/components/layout/AppShell";
@@ -82,6 +83,8 @@ export function LivePage() {
     </div>
   ) : null;
 
+  const noCameras = !cameras.isLoading && (cameras.data?.length ?? 0) === 0;
+
   return (
     <AppShell mainClassName="overflow-hidden">
       {/* Content area: layouts panel + main */}
@@ -98,34 +101,42 @@ export function LivePage() {
 
         {/* Right: sub-header + grid */}
         <div className="flex flex-1 flex-col overflow-hidden">
-          {subHeader}
+          {cameras.isLoading ? (
+            <LiveLoadingSkeleton />
+          ) : noCameras ? (
+            <NoCamerasEmpty />
+          ) : (
+            <>
+              {subHeader}
 
-          <div className="flex-1 overflow-hidden p-1">
-            {activeLayout ? (
-              <VideoGrid
-                size={activeLayout.size}
-                slots={activeLayout.slots}
-                cameras={cameras.data ?? []}
-                streams={streams}
-                health={healthMap}
-                onSlotClick={setAssigningSlot}
-                className="h-full"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-text-tertiary">
-                  No layout — create one from the panel
-                </p>
+              <div className="flex-1 overflow-hidden p-1">
+                {activeLayout ? (
+                  <VideoGrid
+                    size={activeLayout.size}
+                    slots={activeLayout.slots}
+                    cameras={cameras.data ?? []}
+                    streams={streams}
+                    health={healthMap}
+                    onSlotClick={setAssigningSlot}
+                    className="h-full"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-text-tertiary">
+                      No layout — create one from the panel
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {activeLayout && (
-            <div className="flex h-8 flex-shrink-0 items-center border-t border-border-subtle px-4">
-              <span className="font-mono text-[11px] text-text-tertiary">
-                {slotCameraIds.length} of {activeLayout.slots.length} slots assigned
-              </span>
-            </div>
+              {activeLayout && (
+                <div className="flex h-8 flex-shrink-0 items-center border-t border-border-subtle px-4">
+                  <span className="font-mono text-[11px] text-text-tertiary">
+                    {slotCameraIds.length} of {activeLayout.slots.length} slots assigned
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -139,6 +150,61 @@ export function LivePage() {
         />
       )}
     </AppShell>
+  );
+}
+
+// ─── Loading + empty states ───────────────────────────────────────────────────
+
+function LiveLoadingSkeleton() {
+  return (
+    <>
+      <div className="flex h-[44px] flex-shrink-0 items-center justify-between border-b border-border-subtle bg-canvas-raised px-4">
+        <div className="flex items-center gap-3">
+          <span className="h-3.5 w-28 animate-shimmer rounded bg-surface-active" />
+          <span className="h-2.5 w-20 animate-shimmer rounded bg-surface-active" />
+        </div>
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <span key={i} className="h-6 w-10 animate-shimmer rounded-[3px] bg-surface-active" />
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 overflow-hidden p-1">
+        <div className="grid h-full grid-cols-2 gap-1">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="animate-shimmer rounded-[3px] bg-surface-active" />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function NoCamerasEmpty() {
+  return (
+    <div className="flex flex-1 items-center justify-center p-8">
+      <div className="flex max-w-md flex-col items-center gap-4 text-center">
+        <div className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-border bg-surface">
+          <VideoOff className="h-6 w-6 text-text-tertiary" />
+        </div>
+        <div>
+          <p className="text-[16px] font-semibold text-text-primary">
+            No cameras to view yet
+          </p>
+          <p className="mt-1 text-[13px] text-text-secondary">
+            Add a camera first — once it's online you can drop it into a
+            layout slot here.
+          </p>
+        </div>
+        <Link
+          to="/cameras"
+          className="inline-flex items-center gap-1.5 rounded border border-accent bg-accent px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-accent-on-accent hover:bg-accent-bright"
+        >
+          <Camera className="h-3.5 w-3.5" />
+          Add a camera
+        </Link>
+      </div>
+    </div>
   );
 }
 

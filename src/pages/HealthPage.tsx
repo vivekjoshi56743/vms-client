@@ -44,7 +44,12 @@ export function HealthPage() {
             <p className="mt-0.5 text-xs text-text-secondary">Overall backend connectivity</p>
           </div>
           <div className="rounded border border-surface-hover bg-canvas-raised p-4">
-            {system.isLoading && <p className="text-sm text-text-tertiary">Loading…</p>}
+            {system.isLoading && (
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 animate-shimmer rounded-full bg-surface-active" />
+                <span className="h-3 w-40 animate-shimmer rounded bg-surface-active" />
+              </div>
+            )}
             {system.error && (
               <p className="text-sm text-status-critical">
                 Unable to reach backend
@@ -67,11 +72,7 @@ export function HealthPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            {health.isLoading && (
-              <div className="flex items-center justify-center py-8">
-                <p className="text-sm text-text-tertiary">Loading camera health…</p>
-              </div>
-            )}
+            {health.isLoading && <CameraHealthSkeleton />}
 
             {health.error && (
               <div className="rounded border border-status-critical-subtle bg-status-critical-subtle/20 p-4">
@@ -145,5 +146,36 @@ export function HealthPage() {
         </section>
       </div>
     </AppShell>
+  );
+}
+
+function CameraHealthSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex flex-col gap-2 rounded border border-surface-hover bg-canvas-raised p-4"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <span className="block h-4 w-40 animate-shimmer rounded bg-surface-active" />
+              <span className="mt-2 block h-3 w-56 animate-shimmer rounded bg-surface-active" />
+            </div>
+            <span className="h-5 w-16 animate-shimmer rounded-full bg-surface-active" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 border-t border-surface-hover pt-3">
+            <div>
+              <span className="block h-2.5 w-16 animate-shimmer rounded bg-surface-active" />
+              <span className="mt-2 block h-3 w-24 animate-shimmer rounded bg-surface-active" />
+            </div>
+            <div>
+              <span className="block h-2.5 w-20 animate-shimmer rounded bg-surface-active" />
+              <span className="mt-2 block h-3 w-24 animate-shimmer rounded bg-surface-active" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
