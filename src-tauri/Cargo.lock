@@ -3580,6 +3580,7 @@ name = "supervision-client"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "futures-util",
  "hex",
  "keyring",
  "reqwest 0.12.28",

@@ -9,6 +9,7 @@ import { RouteErrorBoundary } from "@/components/ErrorBoundary";
 import { Splash } from "@/components/layout/Splash";
 import { CamerasPage } from "@/pages/CamerasPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { EventsPage } from "@/pages/EventsPage";
 import { HealthPage } from "@/pages/HealthPage";
 import { LivePage } from "@/pages/LivePage";
 import { LoginPage } from "@/pages/LoginPage";
@@ -16,6 +17,7 @@ import { PlaybackPage } from "@/pages/PlaybackPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { Playground } from "@/pages/Playground";
+import { useEventStream } from "@/hooks/useEventStream";
 import { secureLoad, KEYS } from "@/lib/secure-store";
 import { useAuthStore } from "@/stores/auth";
 import { useUIStore } from "@/stores/ui";
@@ -96,12 +98,17 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 }
 
 function AuthedRoutes() {
+  // Mounted only behind RequireAuth so the SSE subscription only runs while
+  // the user has a valid token. Logout unmounts AuthedRoutes → hook teardown
+  // closes the stream.
+  useEventStream();
   return (
     <RequireAuth>
       <Routes>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/live"      element={<LivePage />} />
         <Route path="/playback"  element={<PlaybackPage />} />
+        <Route path="/events"    element={<EventsPage />} />
         <Route path="/cameras"   element={<CamerasPage />} />
         <Route path="/health"        element={<HealthPage />} />
         <Route path="/settings/users" element={<UsersPage />} />

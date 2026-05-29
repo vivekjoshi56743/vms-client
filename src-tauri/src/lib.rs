@@ -1,3 +1,4 @@
+mod events;
 mod secure_store;
 mod tofu;
 
@@ -116,6 +117,7 @@ pub fn run() {
                     ))
                 })?;
             app.manage(tofu_state);
+            app.manage(events::EventStreamState::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -127,6 +129,8 @@ pub fn run() {
             secure_store::secure_store,
             secure_store::secure_load,
             secure_store::secure_delete,
+            events::events_start,
+            events::events_stop,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

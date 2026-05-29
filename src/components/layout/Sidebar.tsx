@@ -19,6 +19,7 @@ import { cn } from "@/lib/cn";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUIStore } from "@/stores/ui";
 import { useAuthStore } from "@/stores/auth";
+import { useEventsStore } from "@/stores/events";
 import { useLogout } from "@/hooks/useAuth";
 import { useAllCameraHealth } from "@/hooks/useCameras";
 
@@ -71,13 +72,15 @@ export function Sidebar() {
   const logout = useLogout();
   const navigate = useNavigate();
   const health = useAllCameraHealth();
+  const unreadEvents = useEventsStore((s) => s.unread);
 
   const unhealthyCount =
     health.data?.filter((h) => h.status === "offline" || h.status === "degraded").length ?? 0;
 
   function badge(key: NavItem["badgeKey"]): number {
     if (key === "health") return unhealthyCount;
-    return 0; // events/incidents: stub 0 until Phase F11/F12
+    if (key === "events") return unreadEvents;
+    return 0; // incidents: stub until backend exposes an incidents API
   }
 
   function handleLogout() {
