@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
+import { useUIStore } from "@/stores/ui";
 import { cn } from "@/lib/cn";
 
 interface AppShellProps {
@@ -26,6 +27,22 @@ interface AppShellProps {
 // localStorage by the UI store (Rule 6: client-only state in Zustand).
 
 export function AppShell({ title, actions, children, mainClassName }: AppShellProps) {
+  const surveillance = useUIStore((s) => s.theme === "dark-surveillance");
+
+  // Surveillance mode hides the sidebar + topbar so the page content fills
+  // the screen. The LivePage's internal sub-header still has the "Exit"
+  // button (and Escape works too — see SurveillanceEnforcer in App.tsx) so
+  // the user can always get back to the standard chrome.
+  if (surveillance) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-canvas text-text-primary">
+        <main className={cn("flex-1", mainClassName ?? "overflow-y-auto")}>
+          {children}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-canvas text-text-primary">
       <Sidebar />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/sonner";
@@ -40,6 +40,32 @@ function ThemeBootstrap() {
       theme === "dark-surveillance" ? "surveillance" : "standard"
     );
   }, [theme]);
+  return null;
+}
+
+// Surveillance mode is a focus mode for monitoring. Three behaviors:
+//   1. When it turns on, jump to /live so the user is looking at video, not
+//      the cameras page or wherever they were.
+//   2. Escape key exits — fastest possible way to get the chrome back.
+//   3. AppShell hides Sidebar/TopBar while the theme is dark-surveillance.
+function SurveillanceEnforcer() {
+  const theme = useUIStore((s) => s.theme);
+  const setTheme = useUIStore((s) => s.setTheme);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (theme === "dark-surveillance") navigate("/live");
+  }, [theme, navigate]);
+
+  useEffect(() => {
+    if (theme !== "dark-surveillance") return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setTheme("dark-standard");
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [theme, setTheme]);
+
   return null;
 }
 
@@ -93,6 +119,7 @@ function App() {
         <ThemeBootstrap />
         <AuthInitializer>
           <HashRouter>
+            <SurveillanceEnforcer />
             <RouteErrorBoundary>
               <Routes>
                 <Route path="/login"      element={<LoginPage />} />
