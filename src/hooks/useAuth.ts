@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getCurrentUser, login, type LoginInput } from "@/api/auth";
+import { getCurrentUser, login, logout as serverLogout, type LoginInput } from "@/api/auth";
 import { secureDelete, secureStore, KEYS } from "@/lib/secure-store";
 import { useAuthStore } from "@/stores/auth";
 
@@ -35,9 +35,12 @@ export function useLogout() {
   const logout = useAuthStore((s) => s.logout);
   const queryClient = useQueryClient();
   return () => {
+    // Tell the server first so the token is invalidated even if local state
+    // gets out of sync. Fire-and-forget — if the network call fails the user
+    // still wants to be logged out locally, so we never block the UI on it.
+    void serverLogout().catch(() => { /* server may already be unreachable */ });
     logout();
     queryClient.clear();
-    // Fire-and-forget: keychain deletion doesn't need to block the UI.
     void Promise.allSettled([
       secureDelete(KEYS.token),
       secureDelete(KEYS.expiresAt),

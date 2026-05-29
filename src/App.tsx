@@ -14,6 +14,7 @@ import { LivePage } from "@/pages/LivePage";
 import { LoginPage } from "@/pages/LoginPage";
 import { PlaybackPage } from "@/pages/PlaybackPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { UsersPage } from "@/pages/UsersPage";
 import { Playground } from "@/pages/Playground";
 import { secureLoad, KEYS } from "@/lib/secure-store";
 import { useAuthStore } from "@/stores/auth";
@@ -76,9 +77,10 @@ function AuthedRoutes() {
         <Route path="/live"      element={<LivePage />} />
         <Route path="/playback"  element={<PlaybackPage />} />
         <Route path="/cameras"   element={<CamerasPage />} />
-        <Route path="/health"    element={<HealthPage />} />
-        <Route path="/settings"  element={<SettingsPage />} />
-        <Route path="*"          element={<Navigate to="/dashboard" replace />} />
+        <Route path="/health"        element={<HealthPage />} />
+        <Route path="/settings/users" element={<UsersPage />} />
+        <Route path="/settings"      element={<SettingsPage />} />
+        <Route path="*"              element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </RequireAuth>
   );

@@ -31,10 +31,8 @@ type NavItem = {
   badgeKey?: "health" | "events" | "incidents";
 };
 
-type NavGroup = {
-  label: string;
-  items: NavItem[];
-};
+type NavItemWithRoles = NavItem & { roles?: Array<"owner" | "admin" | "viewer"> };
+type NavGroup = { label: string; items: NavItemWithRoles[] };
 
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -58,7 +56,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Manage",
     items: [
       { to: "/cameras",        icon: Camera,   label: "Cameras" },
-      { to: "/settings/users", icon: Users,    label: "Users & roles" },
+      { to: "/settings/users", icon: Users,    label: "Users & roles", roles: ["owner", "admin"] },
       { to: "/settings",       icon: Plug,     label: "Connections" },
     ],
   },
@@ -129,31 +127,40 @@ export function Sidebar() {
 
       {/* Nav groups */}
       <nav className="flex flex-1 flex-col overflow-y-auto py-2">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label} className="mb-1">
-            {/* Section label */}
-            {!collapsed && (
-              <p className="px-5 pb-1.5 pt-3 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
-                {group.label}
-              </p>
-            )}
-            {collapsed && <div className="mx-3 my-1 border-t border-border-subtle" />}
+        {NAV_GROUPS.map((group) => {
+          // Role-gated items: hide entries restricted to roles the current
+          // user doesn't have. If a whole group ends up empty (e.g. a viewer
+          // with nothing under Manage), skip the section label too.
+          const visibleItems = group.items.filter(
+            (it) => !it.roles || (user?.role && it.roles.includes(user.role as "owner" | "admin" | "viewer"))
+          );
+          if (visibleItems.length === 0) return null;
+          return (
+            <div key={group.label} className="mb-1">
+              {/* Section label */}
+              {!collapsed && (
+                <p className="px-5 pb-1.5 pt-3 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                  {group.label}
+                </p>
+              )}
+              {collapsed && <div className="mx-3 my-1 border-t border-border-subtle" />}
 
-            {group.items.map(({ to, icon: Icon, label, badgeKey }) => {
-              const count = badgeKey ? badge(badgeKey) : 0;
-              return (
-                <NavItem
-                  key={to}
-                  to={to}
-                  icon={Icon}
-                  label={label}
-                  badge={count}
-                  collapsed={collapsed}
-                />
-              );
-            })}
-          </div>
-        ))}
+              {visibleItems.map(({ to, icon: Icon, label, badgeKey }) => {
+                const count = badgeKey ? badge(badgeKey) : 0;
+                return (
+                  <NavItem
+                    key={to}
+                    to={to}
+                    icon={Icon}
+                    label={label}
+                    badge={count}
+                    collapsed={collapsed}
+                  />
+                );
+              })}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Collapse toggle */}

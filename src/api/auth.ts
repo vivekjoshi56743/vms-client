@@ -28,6 +28,15 @@ export async function login(input: LoginInput): Promise<LoginResponse> {
   return { token: data.token, expiresAt: data.expires_at };
 }
 
+// POST /api/auth/logout — invalidates the current session token server-side.
+// Returns 204 No Content; no body to read. Bearer auth required.
+export async function logout(): Promise<void> {
+  const result = await client.POST("/api/auth/logout", {});
+  if (!result.response.ok && result.response.status !== 204) {
+    throw new Error(`Logout failed with status ${result.response.status}`);
+  }
+}
+
 // GET /api/auth/me — Bearer auth required (set by client middleware).
 export async function getCurrentUser(): Promise<CurrentUser> {
   const result = await client.GET("/api/auth/me");
