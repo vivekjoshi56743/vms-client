@@ -2,6 +2,7 @@ import { CameraOff } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { VideoTile } from "@/components/video/VideoTile";
+import type { PlayerState } from "@/components/video/VideoPlayer";
 import type { GridSize } from "@/stores/layouts";
 import type { Camera } from "@/api/cameras";
 import type { CameraHealth } from "@/api/health";
@@ -21,6 +22,9 @@ interface Props {
   streams: StreamMap;
   health: HealthMap;
   onSlotClick?: (slotIndex: number) => void;
+  /** Bubbles each tile's player state up to the grid's parent — used by
+   *  LivePage to aggregate "Connecting M/N streams" splash progress. */
+  onTileStateChange?: (cameraId: string, state: PlayerState) => void;
   className?: string;
 }
 
@@ -29,9 +33,10 @@ const GRID_COLS: Record<GridSize, string> = {
   "2x2": "grid-cols-2",
   "3x3": "grid-cols-3",
   "4x4": "grid-cols-4",
+  "5x5": "grid-cols-5",
 };
 
-export function VideoGrid({ size, slots, cameras, streams, health, onSlotClick, className }: Props) {
+export function VideoGrid({ size, slots, cameras, streams, health, onSlotClick, onTileStateChange, className }: Props) {
   const cameraMap = Object.fromEntries(cameras.map((c) => [c.id, c]));
 
   return (
@@ -64,6 +69,9 @@ export function VideoGrid({ size, slots, cameras, streams, health, onSlotClick, 
             url={videoUrl}
             hlsFallback={hlsFallback}
             health={cameraHealth}
+            onStateChange={
+              onTileStateChange ? (s) => onTileStateChange(cameraId, s) : undefined
+            }
             className="h-full w-full"
           />
         );

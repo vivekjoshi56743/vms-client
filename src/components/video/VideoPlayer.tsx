@@ -123,13 +123,25 @@ export function VideoPlayer({
         />
       )}
 
-      {/* Connecting overlay */}
-      {state === "connecting" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-accent" />
-            <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-video-chrome-text-muted">
-              Connecting…
+      {/* Connecting overlay — shimmer background + spinner. Replaces a pure
+          black tile so the grid feels "alive" rather than dead while WHEP
+          handshakes are in flight. */}
+      {(state === "connecting" || state === "idle") && (
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden bg-canvas-deep">
+          {/* Shimmer wash */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(110deg, transparent 25%, rgba(34,211,238,0.06) 50%, transparent 75%)",
+              backgroundSize: "200% 100%",
+              animation: "shimmer 1.6s ease-in-out infinite",
+            }}
+          />
+          <div className="relative flex flex-col items-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-accent" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-video-chrome-text-muted">
+              {state === "idle" ? "Waiting…" : "Connecting…"}
             </span>
           </div>
         </div>

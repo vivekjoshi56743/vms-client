@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type GridSize = "1x1" | "2x2" | "3x3" | "4x4";
+export type GridSize = "1x1" | "2x2" | "3x3" | "4x4" | "5x5";
 
 export interface Layout {
   id: string;

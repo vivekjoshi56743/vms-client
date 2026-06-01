@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/sonner";
@@ -18,6 +18,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { Playground } from "@/pages/Playground";
 import { useEventStream } from "@/hooks/useEventStream";
+import { useIsAuthenticated } from "@/hooks/useAuth";
 import { secureLoad, KEYS } from "@/lib/secure-store";
 import { useAuthStore } from "@/stores/auth";
 import { useUIStore } from "@/stores/ui";
@@ -53,11 +54,23 @@ function ThemeBootstrap() {
 function SurveillanceEnforcer() {
   const theme = useUIStore((s) => s.theme);
   const setTheme = useUIStore((s) => s.setTheme);
+  const isAuthed = useIsAuthenticated();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    if (theme === "dark-surveillance") navigate("/live");
-  }, [theme, navigate]);
+    // Only navigate when authenticated AND not already on /live. Without
+    // the auth gate this enforcer fights RequireAuth: it jumps to /live,
+    // RequireAuth redirects to /login, this fires again because the path
+    // changed → infinite history.replaceState() loop.
+    if (
+      theme === "dark-surveillance" &&
+      isAuthed &&
+      !location.pathname.startsWith("/live")
+    ) {
+      navigate("/live");
+    }
+  }, [theme, isAuthed, navigate, location.pathname]);
 
   useEffect(() => {
     if (theme !== "dark-surveillance") return;

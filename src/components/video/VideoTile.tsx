@@ -13,6 +13,9 @@ interface Props {
   /** HLS URL to silently fall back to when WHEP fails (H.265 cameras). */
   hlsFallback?: string | null;
   health?: CameraHealth;
+  /** Reports the underlying VideoPlayer's state so the parent can aggregate
+   *  (e.g. LivePage's "Connecting M/N" splash). */
+  onStateChange?: (state: PlayerState) => void;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -31,6 +34,26 @@ function locationTag(name: string): string {
   return seg && seg.length <= 5 ? seg : "CAM";
 }
 
+// Color-coded location badge style. Distinct hue per location helps an
+// operator scanning a 9- or 16-camera grid spot which site a tile belongs to.
+// Returns inline style — using server-N tokens for locations we don't have
+// dedicated -subtle variants for.
+function locationBadgeStyle(tag: string): React.CSSProperties {
+  switch (tag) {
+    case "MAIN":
+      return { background: "var(--accent-subtle)", color: "var(--accent-text)" };
+    case "WHSE":
+    case "DOCK":
+      return { background: "var(--status-warning-subtle)", color: "var(--status-warning)" };
+    case "N.BR":
+      return { background: "color-mix(in srgb, var(--server-2) 18%, transparent)", color: "var(--server-2)" };
+    case "PARK":
+      return { background: "var(--status-online-subtle)", color: "var(--status-online)" };
+    default:
+      return { background: "var(--surface)", color: "var(--text-secondary)" };
+  }
+}
+
 function useClock() {
   const [time, setTime] = useState(() => formatTime(new Date()));
   useEffect(() => {
@@ -44,9 +67,14 @@ function formatTime(d: Date) {
   return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-export function VideoTile({ camera, url, hlsFallback, health, className, style }: Props) {
+export function VideoTile({ camera, url, hlsFallback, health, onStateChange, className, style }: Props) {
   const [playerState, setPlayerState] = useState<PlayerState>("idle");
   const isPlaying = playerState === "playing";
+
+  function handleStateChange(s: PlayerState) {
+    setPlayerState(s);
+    onStateChange?.(s);
+  }
   const isCritical = health?.status === "offline" || health?.status === "degraded";
   const tag = locationTag(camera.name);
   const clock = useClock();
@@ -64,7 +92,7 @@ export function VideoTile({ camera, url, hlsFallback, health, className, style }
         url={url}
         hlsFallback={hlsFallback}
         className="h-full w-full"
-        onStateChange={setPlayerState}
+        onStateChange={handleStateChange}
         muted
       />
 
@@ -98,7 +126,10 @@ export function VideoTile({ camera, url, hlsFallback, health, className, style }
             <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.02em] text-video-chrome-text">
               {camera.name}
             </span>
-            <span className="rounded-[2px] bg-accent-subtle px-1.5 font-mono text-[9px] font-semibold uppercase text-accent-text">
+            <span
+              className="rounded-[2px] px-1.5 font-mono text-[9px] font-semibold uppercase"
+              style={locationBadgeStyle(tag)}
+            >
               {tag}
             </span>
           </div>
