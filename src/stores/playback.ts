@@ -1,77 +1,108 @@
 import { create } from "zustand";
 
-// Playback UI state. Server data (segments, fMP4 URL) lives in TanStack Query
-// — this store only holds the user's current intent: which camera, what time
-// window, which recording segment is active, and where within it to start.
+// Multi-camera playback state.
+//
+// Selected cameras play synchronized off a single global time pointer
+// (RFC3339 ms-since-epoch). Each PlaybackTile mounts its own segment loader
+// using the existing per-camera flow (useRecordings → fetchPlaybackDataUrl
+// → blob URL). The tiles all subscribe to this store: same time, same
+// play/pause, same speed.
+//
+// "primaryCameraId" is the tile whose <video> drives forward progress.
+// When that tile's currentTime advances, it pushes globalTimeMs up which
+// every other tile reacts to (seeking their own video to match). Without
+// a designated primary we'd have N tiles all pushing each other and
+// fighting for the time pointer.
 
 export type PlaybackSpeed = 0.5 | 1 | 2 | 4 | 8 | 16;
 
 export const SPEEDS: PlaybackSpeed[] = [0.5, 1, 2, 4, 8, 16];
 
 interface PlaybackState {
-  cameraId: string | null;
+  /** Multi-select: which cameras are visible in the grid. */
+  cameraIds: string[];
+  /** Which selected tile owns forward time progression. */
+  primaryCameraId: string | null;
   /** Range start (RFC3339 UTC). */
   rangeStart: string | null;
   /** Range end (RFC3339 UTC). */
   rangeEnd: string | null;
-  /** Segment id currently loaded into the player. */
-  activeSegmentId: string | null;
-  /** Seconds into the active segment to seek to on load. */
-  seekWithinSegmentSec: number;
-  /** Live readout: seconds offset from rangeStart (driven by <video> timeupdate). */
-  currentOffset: number;
+  /** Single source of truth for "now" in playback. Unix ms. */
+  globalTimeMs: number;
   isPlaying: boolean;
   speed: PlaybackSpeed;
 
-  setCamera: (id: string | null) => void;
+  toggleCamera: (id: string) => void;
+  setCameras: (ids: string[]) => void;
+  setPrimary: (id: string | null) => void;
   setRange: (start: string, end: string) => void;
-  /** Load a specific segment, optionally starting partway in. */
-  selectSegment: (id: string | null, withinSec?: number) => void;
-  setCurrentOffset: (seconds: number) => void;
+  /** Authoritative seek. Pauses (caller decides to resume). */
+  seekTo: (timeMs: number) => void;
+  /** Used by the primary tile's timeupdate to nudge time forward. */
+  reportTime: (timeMs: number) => void;
   setPlaying: (playing: boolean) => void;
   togglePlaying: () => void;
   setSpeed: (speed: PlaybackSpeed) => void;
 }
 
 // Default range: previous 24 h ending now (UTC).
-function defaultRange(): { rangeStart: string; rangeEnd: string } {
+function defaultRange(): { rangeStart: string; rangeEnd: string; mid: number } {
   const end = new Date();
   const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-  return { rangeStart: start.toISOString(), rangeEnd: end.toISOString() };
+  return {
+    rangeStart: start.toISOString(),
+    rangeEnd: end.toISOString(),
+    mid: start.getTime() + (end.getTime() - start.getTime()) / 2,
+  };
 }
 
 export const usePlaybackStore = create<PlaybackState>()((set) => {
-  const { rangeStart, rangeEnd } = defaultRange();
+  const { rangeStart, rangeEnd, mid } = defaultRange();
   return {
-    cameraId: null,
+    cameraIds: [],
+    primaryCameraId: null,
     rangeStart,
     rangeEnd,
-    activeSegmentId: null,
-    seekWithinSegmentSec: 0,
-    currentOffset: 0,
+    globalTimeMs: mid,
     isPlaying: false,
     speed: 1,
 
-    setCamera: (id) =>
-      set({
-        cameraId: id,
-        activeSegmentId: null,
-        seekWithinSegmentSec: 0,
-        currentOffset: 0,
-        isPlaying: false,
+    toggleCamera: (id) =>
+      set((s) => {
+        const has = s.cameraIds.includes(id);
+        const next = has ? s.cameraIds.filter((c) => c !== id) : [...s.cameraIds, id];
+        // Maintain primary: if removed, pick the first remaining (or null).
+        let primary = s.primaryCameraId;
+        if (has && primary === id) primary = next[0] ?? null;
+        if (!has && primary === null) primary = id;
+        return { cameraIds: next, primaryCameraId: primary };
       }),
+
+    setCameras: (cameraIds) =>
+      set((s) => ({
+        cameraIds,
+        primaryCameraId:
+          s.primaryCameraId && cameraIds.includes(s.primaryCameraId)
+            ? s.primaryCameraId
+            : cameraIds[0] ?? null,
+      })),
+
+    setPrimary: (primaryCameraId) => set({ primaryCameraId }),
+
     setRange: (rangeStart, rangeEnd) =>
       set({
         rangeStart,
         rangeEnd,
-        activeSegmentId: null,
-        seekWithinSegmentSec: 0,
-        currentOffset: 0,
+        globalTimeMs:
+          Date.parse(rangeStart) +
+          (Date.parse(rangeEnd) - Date.parse(rangeStart)) / 2,
         isPlaying: false,
       }),
-    selectSegment: (id, withinSec = 0) =>
-      set({ activeSegmentId: id, seekWithinSegmentSec: withinSec }),
-    setCurrentOffset: (currentOffset) => set({ currentOffset }),
+
+    seekTo: (globalTimeMs) => set({ globalTimeMs, isPlaying: false }),
+
+    reportTime: (globalTimeMs) => set({ globalTimeMs }),
+
     setPlaying: (isPlaying) => set({ isPlaying }),
     togglePlaying: () => set((s) => ({ isPlaying: !s.isPlaying })),
     setSpeed: (speed) => set({ speed }),
