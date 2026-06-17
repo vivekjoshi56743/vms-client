@@ -185,10 +185,43 @@ function WhepPlayer({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sessionRef = useRef<WhepSession | null>(null);
+  // Soft-retry counter for the "path is not configured" race. MediaMTX
+  // returns the WHEP URL the moment the path is registered, but the RTSP
+  // source bind happens slightly later — a freshly-added camera's first
+  // WHEP attempt almost always fails with that 400. We re-render the
+  // effect on each attempt to retry quietly under the connecting overlay.
+  const [notReadyAttempt, setNotReadyAttempt] = useState(0);
+  // Two MediaMTX warmup races we ride out under the connecting overlay:
+  // path-not-configured (immediate) and no-one-publishing (RTSP source pull,
+  // up to ~8s on slow networks). Budget = 12 × 800 ms ≈ 9.6 s.
+  const NOT_READY_MAX_ATTEMPTS = 12;
+  const NOT_READY_BACKOFF_MS = 800;
 
   useEffect(() => {
     onConnecting();
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleConnectError = (err: Error) => {
+      if (cancelled) return;
+      const e = err as Error & {
+        whepUnsupportedCodec?: boolean;
+        whepNotConfigured?: boolean;
+      };
+      if (e.whepNotConfigured && notReadyAttempt < NOT_READY_MAX_ATTEMPTS) {
+        // Stay in "connecting" — the connecting overlay keeps the shimmer
+        // up so the retry is invisible to the user.
+        retryTimer = setTimeout(() => {
+          if (!cancelled) setNotReadyAttempt((a) => a + 1);
+        }, NOT_READY_BACKOFF_MS);
+        return;
+      }
+      if (e.whepUnsupportedCodec && hlsFallback) {
+        onError(err.message, { whepUnsupportedCodec: true, hlsFallback });
+      } else {
+        onError(err.message);
+      }
+    };
 
     connectWhep(
       url,
@@ -200,15 +233,7 @@ function WhepPlayer({
         }
         onPlaying();
       },
-      (err) => {
-        if (cancelled) return;
-        const e = err as Error & { whepUnsupportedCodec?: boolean };
-        if (e.whepUnsupportedCodec && hlsFallback) {
-          onError(err.message, { whepUnsupportedCodec: true, hlsFallback });
-        } else {
-          onError(err.message);
-        }
-      }
+      handleConnectError
     )
       .then((session) => {
         if (cancelled) {
@@ -217,22 +242,15 @@ function WhepPlayer({
           sessionRef.current = session;
         }
       })
-      .catch((err: Error) => {
-        if (cancelled) return;
-        const e = err as Error & { whepUnsupportedCodec?: boolean };
-        if (e.whepUnsupportedCodec && hlsFallback) {
-          onError(err.message, { whepUnsupportedCodec: true, hlsFallback });
-        } else {
-          onError(err.message);
-        }
-      });
+      .catch(handleConnectError);
 
     return () => {
       cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
       sessionRef.current?.close();
       sessionRef.current = null;
     };
-  }, [url]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [url, notReadyAttempt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <video

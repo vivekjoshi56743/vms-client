@@ -93,7 +93,7 @@ function EmptySlot({
       className={cn(
         "flex flex-col items-center justify-center gap-2 rounded bg-canvas-deep",
         "border border-dashed border-border text-text-disabled",
-        "transition-colors duration-[120ms]",
+        "transition-colors duration-120",
         onClick
           ? "cursor-pointer hover:border-accent hover:text-accent"
           : "cursor-default"

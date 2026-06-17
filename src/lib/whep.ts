@@ -79,11 +79,28 @@ export async function connectWhep(
     const body = await resp.text().catch(() => "");
     const err = new Error(
       `WHEP: server returned ${resp.status} ${resp.statusText}${body ? ` — ${body.trim()}` : ""}`
-    ) as Error & { whepUnsupportedCodec?: boolean };
+    ) as Error & {
+      whepUnsupportedCodec?: boolean;
+      whepNotConfigured?: boolean;
+    };
     // Flag codec-incompatibility so callers can fall back to HLS without
     // showing an error to the user — it's expected for H.265 cameras.
     if (resp.status === 400 && body.toLowerCase().includes("codec")) {
       err.whepUnsupportedCodec = true;
+    }
+    // Race window: ensureStream() returns the WHEP URL the moment MediaMTX
+    // has the path registered, but the RTSP source bind + first packet take
+    // longer. Two distinct sub-races, both retryable:
+    //   • 400 "path is not configured" — path not registered yet (very early)
+    //   • 404 "no one is publishing to path" — registered, source not yet
+    //                                          publishing frames
+    // Callers treat both the same: stay in connecting, retry after backoff.
+    const bodyLower = body.toLowerCase();
+    if (
+      (resp.status === 400 && bodyLower.includes("not configured")) ||
+      (resp.status === 404 && bodyLower.includes("publishing"))
+    ) {
+      err.whepNotConfigured = true;
     }
     throw err;
   }

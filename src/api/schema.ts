@@ -761,6 +761,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/discovery/nvr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discover cameras on an NVR
+         * @description Connects to an NVR via ONVIF, enumerates all camera channels, and returns their RTSP stream URLs. Use the returned rtsp_url values to add cameras via POST /api/cameras. Requires admin or owner role.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["apitypes.NVRDiscoverRequest"];
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["apitypes.NVRDiscoverResponse"];
+                    };
+                };
+                /** @description Bad request or NVR unreachable */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["apitypes.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["apitypes.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["apitypes.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/discovery/nvr/hikvision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discover cameras on a Hikvision NVR/DVR via ISAPI
+         * @description Connects to a Hikvision device via the ISAPI REST interface (/ISAPI/Streaming/channels), authenticates using HTTP Digest, and returns all enabled camera channels with their RTSP stream URLs. Use this as a fallback when ONVIF is disabled on the device. Requires admin or owner role.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["apitypes.NVRDiscoverRequest"];
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["apitypes.NVRDiscoverResponse"];
+                    };
+                };
+                /** @description Bad request or device unreachable */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["apitypes.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["apitypes.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["apitypes.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/events": {
         parameters: {
             query?: never;
@@ -1437,6 +1569,16 @@ export interface components {
             /** @example jsmith */
             username?: string;
         };
+        "apitypes.DiscoveredCameraResponse": {
+            /** @example Camera 1 */
+            name?: string;
+            /** @example Profile_1 */
+            profile_token?: string;
+            /** @example rtsp://192.168.1.100:554/stream1 */
+            rtsp_url?: string;
+            /** @example admin */
+            username?: string;
+        };
         "apitypes.ErrorResponse": {
             /** @example invalid credentials */
             error?: string;
@@ -1456,6 +1598,19 @@ export interface components {
             expires_at?: string;
             /** @example a3f5c8d1e2b4... */
             token?: string;
+        };
+        "apitypes.NVRDiscoverRequest": {
+            /** @example password123 */
+            password?: string;
+            /** @example http://192.168.1.100:80 */
+            url?: string;
+            /** @example admin */
+            username?: string;
+        };
+        "apitypes.NVRDiscoverResponse": {
+            cameras?: components["schemas"]["apitypes.DiscoveredCameraResponse"][];
+            /** @example http://192.168.1.100:80 */
+            nvr_host?: string;
         };
         "apitypes.PatchCameraRequest": {
             record_enabled?: boolean;
@@ -1533,7 +1688,14 @@ export interface components {
     };
     responses: never;
     parameters: never;
-    requestBodies: never;
+    requestBodies: {
+        /** @description NVR connection details */
+        "apitypes.NVRDiscoverRequest": {
+            content: {
+                "application/json": components["schemas"]["apitypes.NVRDiscoverRequest"];
+            };
+        };
+    };
     headers: never;
     pathItems: never;
 }

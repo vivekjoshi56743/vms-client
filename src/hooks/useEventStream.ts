@@ -63,7 +63,15 @@ export function useEventStream() {
     }
 
     (async () => {
-      unlisten = await listenForEvents(
+      // `listen()` is async — by the time it resolves, the effect's cleanup
+      // may already have run (React 18 StrictMode double-invokes effects;
+      // any dep change also tears down). If we blindly assign the resolved
+      // unlisten into our local `unlisten`, we leak the Tauri listener into
+      // a dead scope that nothing will ever clean up. Over many reconnects
+      // / HMR cycles / StrictMode mounts these accumulate, and every
+      // backend event fans out to all of them — that's how 2 backend events
+      // become 142 rows in the store.
+      const u = await listenForEvents(
         (ev) => routeEvent(ev, queryClient),
         (msg) => {
           // eslint-disable-next-line no-console
@@ -73,6 +81,11 @@ export function useEventStream() {
           if (!cancelled) scheduleReconnect();
         }
       );
+      if (cancelled) {
+        u();
+        return;
+      }
+      unlisten = u;
       await connect();
     })();
 

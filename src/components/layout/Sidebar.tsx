@@ -173,7 +173,7 @@ export function Sidebar() {
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={cn(
             "flex w-full items-center rounded px-2 py-1.5",
-            "text-text-tertiary transition-colors duration-[120ms] hover:bg-surface hover:text-text-primary",
+            "text-text-tertiary transition-colors duration-120 hover:bg-surface hover:text-text-primary",
             collapsed ? "justify-center" : "justify-end"
           )}
         >
@@ -202,7 +202,7 @@ export function Sidebar() {
               onClick={handleLogout}
               className={cn(
                 "flex w-full items-center gap-2.5 rounded px-2 py-1.5",
-                "text-[13px] text-text-tertiary transition-colors duration-[120ms]",
+                "text-[13px] text-text-tertiary transition-colors duration-120",
                 "hover:bg-surface hover:text-status-critical",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                 collapsed && "justify-center"
@@ -242,7 +242,7 @@ function NavItem({
           className={({ isActive }) =>
             cn(
               "relative flex items-center gap-[11px] rounded px-[9px] py-[7px] mx-2 text-[13px]",
-              "transition-colors duration-[120ms]",
+              "transition-colors duration-120",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
               isActive
                 ? "bg-accent-subtle text-accent-text font-medium"

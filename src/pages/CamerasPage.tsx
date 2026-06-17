@@ -1,20 +1,30 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Radar } from "lucide-react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { CameraCard } from "@/components/camera/CameraCard";
 import { AddCameraDialog } from "@/components/camera/AddCameraDialog";
 import { DeleteCameraDialog } from "@/components/camera/DeleteCameraDialog";
+import { DiscoveryDialog } from "@/components/camera/discovery/DiscoveryDialog";
 import { useCameras, useAllCameraHealth } from "@/hooks/useCameras";
+import { isTempCamera } from "@/hooks/useDiscovery";
 import type { Camera } from "@/api/cameras";
 
 export function CamerasPage() {
-  const cameras = useCameras();
+  const camerasQuery = useCameras();
   const health = useAllCameraHealth();
 
   const [addOpen, setAddOpen] = useState(false);
+  const [discoverOpen, setDiscoverOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Camera | null>(null);
+
+  // Hide transient `temp_` preview cameras created by NVR discovery — they
+  // exist only while a discovered feed is being previewed.
+  const cameras = {
+    ...camerasQuery,
+    data: camerasQuery.data?.filter((c) => !isTempCamera(c.name)),
+  };
 
   // Build a map from camera_id → health so CameraCard gets O(1) lookup.
   const healthMap = Object.fromEntries(
@@ -22,10 +32,16 @@ export function CamerasPage() {
   );
 
   const actions = (
-    <Button variant="accent" size="sm" onClick={() => setAddOpen(true)}>
-      <Plus className="h-4 w-4" />
-      Add camera
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button variant="secondary" size="sm" onClick={() => setDiscoverOpen(true)}>
+        <Radar className="h-4 w-4" />
+        Discover
+      </Button>
+      <Button variant="accent" size="sm" onClick={() => setAddOpen(true)}>
+        <Plus className="h-4 w-4" />
+        Add camera
+      </Button>
+    </div>
   );
 
   return (
@@ -60,7 +76,10 @@ export function CamerasPage() {
 
         {/* Empty state */}
         {cameras.data && cameras.data.length === 0 && (
-          <EmptyState onAdd={() => setAddOpen(true)} />
+          <EmptyState
+            onAdd={() => setAddOpen(true)}
+            onDiscover={() => setDiscoverOpen(true)}
+          />
         )}
 
         {/* Camera grid */}
@@ -79,6 +98,7 @@ export function CamerasPage() {
       </div>
 
       <AddCameraDialog open={addOpen} onOpenChange={setAddOpen} />
+      <DiscoveryDialog open={discoverOpen} onOpenChange={setDiscoverOpen} />
       <DeleteCameraDialog
         camera={deleteTarget}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
@@ -100,7 +120,13 @@ function CameraListSkeleton() {
   );
 }
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+function EmptyState({
+  onAdd,
+  onDiscover,
+}: {
+  onAdd: () => void;
+  onDiscover: () => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center rounded-card border border-dashed border-border py-20 text-center">
       <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full border border-border bg-surface">
@@ -115,10 +141,16 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
         Connect your first RTSP camera to start monitoring. You&apos;ll need the
         RTSP stream URL and optional credentials.
       </p>
-      <Button variant="accent" onClick={onAdd}>
-        <Plus className="h-4 w-4" />
-        Add your first camera
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button variant="secondary" onClick={onDiscover}>
+          <Radar className="h-4 w-4" />
+          Discover from NVR
+        </Button>
+        <Button variant="accent" onClick={onAdd}>
+          <Plus className="h-4 w-4" />
+          Add your first camera
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,4 @@
 {
-    "schemes": [
-        "http"
-    ],
     "swagger": "2.0",
     "info": {
         "description": "On-premise Video Management System (VMS) API.",
@@ -12,7 +9,6 @@
         },
         "version": "0.1.0"
     },
-    "host": "localhost:8443",
     "basePath": "/",
     "paths": {
         "/api/auth/login": {
@@ -638,6 +634,120 @@
                 }
             }
         },
+        "/api/discovery/nvr": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Connects to an NVR via ONVIF, enumerates all camera channels, and returns their RTSP stream URLs. Use the returned rtsp_url values to add cameras via POST /api/cameras. Requires admin or owner role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "discovery"
+                ],
+                "summary": "Discover cameras on an NVR",
+                "parameters": [
+                    {
+                        "description": "NVR connection details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.NVRDiscoverRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.NVRDiscoverResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or NVR unreachable",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/discovery/nvr/hikvision": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Connects to a Hikvision device via the ISAPI REST interface (/ISAPI/Streaming/channels), authenticates using HTTP Digest, and returns all enabled camera channels with their RTSP stream URLs. Use this as a fallback when ONVIF is disabled on the device. Requires admin or owner role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "discovery"
+                ],
+                "summary": "Discover cameras on a Hikvision NVR/DVR via ISAPI",
+                "parameters": [
+                    {
+                        "description": "NVR connection details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.NVRDiscoverRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.NVRDiscoverResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or device unreachable",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/events": {
             "get": {
                 "security": [
@@ -1252,6 +1362,27 @@
                 }
             }
         },
+        "apitypes.DiscoveredCameraResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "Camera 1"
+                },
+                "profile_token": {
+                    "type": "string",
+                    "example": "Profile_1"
+                },
+                "rtsp_url": {
+                    "type": "string",
+                    "example": "rtsp://192.168.1.100:554/stream1"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
         "apitypes.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -1293,6 +1424,38 @@
                 "token": {
                     "type": "string",
                     "example": "a3f5c8d1e2b4..."
+                }
+            }
+        },
+        "apitypes.NVRDiscoverRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "password123"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "http://192.168.1.100:80"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "apitypes.NVRDiscoverResponse": {
+            "type": "object",
+            "properties": {
+                "cameras": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/apitypes.DiscoveredCameraResponse"
+                    }
+                },
+                "nvr_host": {
+                    "type": "string",
+                    "example": "http://192.168.1.100:80"
                 }
             }
         },

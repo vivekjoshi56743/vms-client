@@ -53,7 +53,7 @@ export function PlaybackControls({
           aria-label={isPlaying ? "Pause" : "Play"}
           className={cn(
             "inline-flex h-9 w-9 items-center justify-center rounded-full",
-            "bg-accent text-accent-on-accent transition-colors duration-[120ms]",
+            "bg-accent text-accent-on-accent transition-colors duration-120",
             "hover:bg-accent-bright focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
             "disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-disabled"
           )}
@@ -91,7 +91,7 @@ export function PlaybackControls({
               className={cn(
                 "inline-flex h-6 min-w-[34px] items-center justify-center rounded-[2px] px-1.5",
                 "font-mono text-[10.5px] font-semibold tracking-[0.04em]",
-                "transition-colors duration-[120ms]",
+                "transition-colors duration-120",
                 speed === s
                   ? "bg-accent-subtle text-accent-text"
                   : "text-text-tertiary hover:bg-surface hover:text-text-primary",
@@ -116,7 +116,7 @@ function ControlButton({
       {...props}
       className={cn(
         "inline-flex h-8 w-8 items-center justify-center rounded text-text-secondary",
-        "transition-colors duration-[120ms] hover:bg-surface hover:text-text-primary",
+        "transition-colors duration-120 hover:bg-surface hover:text-text-primary",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
         "disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent"
       )}

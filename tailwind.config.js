@@ -93,6 +93,14 @@ export default {
         backdrop: "var(--backdrop)",
       },
 
+      // Design-system micro-transition. Disambiguated from animation-duration
+      // by living on its own scale step; using `duration-[120ms]` triggers a
+      // Tailwind ambiguity warning since the bracket value could match either
+      // `transition-duration` or `animation-duration`.
+      transitionDuration: {
+        120: "120ms",
+      },
+
       // Expose the design-system keyframes as Tailwind animation utilities.
       // The actual @keyframes live in animations.css so the names exist
       // globally (not just where Tailwind processes).

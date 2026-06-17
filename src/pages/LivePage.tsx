@@ -6,6 +6,7 @@ import { Plus, Monitor, X, Camera, VideoOff, Search, ChevronLeft, ChevronRight }
 import { cn } from "@/lib/cn";
 import { AppShell } from "@/components/layout/AppShell";
 import { VideoGrid } from "@/components/video/VideoGrid";
+import { ConnectingSplash } from "@/components/video/ConnectingSplash";
 import type { PlayerState } from "@/components/video/VideoPlayer";
 import { useCameras, useAllCameraHealth } from "@/hooks/useCameras";
 import { useStreams } from "@/hooks/useStream";
@@ -120,7 +121,7 @@ export function LivePage() {
             key={s}
             onClick={() => setSize(activeLayout.id, s)}
             className={cn(
-              "inline-flex h-6 items-center rounded-[3px] px-2.5 font-mono text-[11px] font-semibold tracking-[0.05em] transition-colors duration-[120ms]",
+              "inline-flex h-6 items-center rounded-[3px] px-2.5 font-mono text-[11px] font-semibold tracking-[0.05em] transition-colors duration-120",
               activeLayout.size === s
                 ? "bg-accent-subtle text-accent-text"
                 : "border border-border bg-surface text-text-secondary hover:text-text-primary"
@@ -133,7 +134,7 @@ export function LivePage() {
         <button
           onClick={() => setTheme(theme === "dark-surveillance" ? "dark-standard" : "dark-surveillance")}
           className={cn(
-            "inline-flex h-6 items-center gap-1.5 rounded-[3px] px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] transition-colors duration-[120ms]",
+            "inline-flex h-6 items-center gap-1.5 rounded-[3px] px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.05em] transition-colors duration-120",
             theme === "dark-surveillance"
               ? "bg-accent text-accent-on-accent"
               : "border border-border bg-surface text-text-secondary hover:text-text-primary"
@@ -224,128 +225,20 @@ export function LivePage() {
   );
 }
 
-// ─── Connecting splash ────────────────────────────────────────────────────────
-// Aggregate progress overlay shown over the video grid while the first wave
-// of tiles is still handshaking. Fades out when every "expected to play"
-// tile has reached `playing` state, or after a hard fallback timeout so a
-// single broken camera doesn't keep the splash up forever.
-//
-// "Expected to play" excludes cameras whose health is offline/degraded —
-// those will surface their own per-tile offline overlay; counting them
-// would prevent the splash from ever clearing on a partially-down system.
-
-// Minimum time the splash stays up, even if every stream connects faster
-// than that. On a healthy LAN tiles can reach `playing` in <200 ms, which
-// makes the splash flash and disappear — worse than not showing it at all.
-// Two seconds is long enough to register visually without being annoying.
-const SPLASH_MIN_MS = 2_000;
-// Hard ceiling — a single broken camera can't pin the splash up indefinitely.
-const SPLASH_FALLBACK_MS = 8_000;
-
-function ConnectingSplash({
-  slotCameraIds,
-  tileStates,
-  healthMap,
-}: {
-  slotCameraIds: string[];
-  tileStates: Record<string, PlayerState>;
-  healthMap: Record<string, { status: string } | undefined>;
-}) {
-  // Reset both timers whenever the camera set changes (layout switch, slot
-  // assignment, etc.) so the splash re-runs its full lifecycle for the new
-  // tiles.
-  const [minElapsed, setMinElapsed] = useState(false);
-  const [fallbackElapsed, setFallbackElapsed] = useState(false);
-  useEffect(() => {
-    setMinElapsed(false);
-    setFallbackElapsed(false);
-    const minId = setTimeout(() => setMinElapsed(true), SPLASH_MIN_MS);
-    const maxId = setTimeout(() => setFallbackElapsed(true), SPLASH_FALLBACK_MS);
-    return () => {
-      clearTimeout(minId);
-      clearTimeout(maxId);
-    };
-  }, [slotCameraIds.join("|")]);
-
-  const expected = slotCameraIds.filter(
-    (id) => healthMap[id]?.status !== "offline"
-  );
-  const playing = expected.filter((id) => tileStates[id] === "playing").length;
-  const total = expected.length;
-
-  // Hide rules:
-  //   • No expected tiles at all (nothing's coming) → hide immediately.
-  //   • Every expected tile is playing AND the 2 s minimum has elapsed.
-  //   • Fallback ceiling hit (8 s) → hide regardless.
-  const allPlaying = playing >= total;
-  const hidden =
-    total === 0 || (allPlaying && minElapsed) || fallbackElapsed;
-
-  return (
-    <div
-      aria-hidden={hidden}
-      className={cn(
-        "pointer-events-none absolute inset-0 z-20 flex items-center justify-center overflow-hidden",
-        "transition-opacity duration-500",
-        hidden ? "opacity-0" : "opacity-100"
-      )}
-      style={{
-        // Opaque dark surface with the mockup's dot-grid + ambient cyan glow.
-        // Layers, painted back-to-front:
-        //   1. Solid canvas-deep — fully opaque so video tiles never show through.
-        //   2. Radial cyan wash centered on the splash.
-        //   3. 32px dot-grid pattern in --grid tone.
-        backgroundColor: "var(--canvas-deep)",
-        backgroundImage:
-          "radial-gradient(ellipse at 50% 45%, rgba(34,211,238,0.10) 0%, transparent 55%)," +
-          "radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 0)",
-        backgroundSize: "auto, 32px 32px",
-      }}
-    >
-      {/* Ambient pulsing glow ring */}
-      <span
-        className="pointer-events-none absolute h-[440px] w-[440px] rounded-full"
-        style={{
-          background: "radial-gradient(circle, rgba(34,211,238,0.10) 0%, transparent 60%)",
-          animation: "splash-glow 4s ease-in-out infinite alternate",
-        }}
-      />
-
-      <div className="relative z-10 flex max-w-sm flex-col items-center gap-5 px-6 text-center">
-        {/* Eyebrow with horizontal dashes — matches mockup .splash-tip */}
-        <div className="flex items-center gap-2.5 font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-accent">
-          <span className="block h-px w-7 bg-accent/40" />
-          Establishing live feeds
-          <span className="block h-px w-7 bg-accent/40" />
-        </div>
-
-        {/* Big M/N counter */}
-        <div className="font-mono text-[44px] font-semibold leading-none tabular-nums">
-          <span className="text-accent" style={{ textShadow: "0 0 18px var(--accent-glow)" }}>
-            {playing}
-          </span>
-          <span className="mx-3 text-text-disabled">/</span>
-          <span className="text-text-primary">{total}</span>
-        </div>
-
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-text-tertiary">
-          Connecting streams
-        </span>
-
-        {/* Progress bar with cyan glow */}
-        <div className="h-[2px] w-[280px] overflow-hidden rounded-full bg-surface">
-          <div
-            className="h-full transition-[width] duration-300"
-            style={{
-              width: total > 0 ? `${(playing / total) * 100}%` : "0%",
-              background: "linear-gradient(90deg, var(--accent), var(--accent-bright))",
-              boxShadow: "0 0 12px var(--accent-glow)",
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
+// Compact a camera name to fit inside a mini-grid slot in the LayoutCard.
+// Uses initials from underscore-separated names (FRONT_DOOR → "FD"),
+// otherwise the first N chars. Tighter scale for denser grids.
+function abbreviate(name: string, cols: number): string {
+  const maxLen = cols <= 2 ? 6 : cols <= 3 ? 4 : cols <= 4 ? 3 : 2;
+  if (name.includes("_")) {
+    const initials = name
+      .split("_")
+      .filter(Boolean)
+      .map((p) => p[0]!.toUpperCase())
+      .join("");
+    if (initials.length >= 2) return initials.slice(0, maxLen);
+  }
+  return name.slice(0, maxLen).toUpperCase();
 }
 
 // ─── Pagination footer ────────────────────────────────────────────────────────
@@ -536,7 +429,7 @@ function LayoutsPanel({
       <div className="border-t border-border-subtle p-2">
         <button
           onClick={onCreate}
-          className="flex w-full items-center justify-center gap-1.5 rounded py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-text-tertiary transition-colors duration-[120ms] hover:bg-surface hover:text-text-primary"
+          className="flex w-full items-center justify-center gap-1.5 rounded py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-text-tertiary transition-colors duration-120 hover:bg-surface hover:text-text-primary"
         >
           <Plus className="h-3.5 w-3.5" />
           New Layout
@@ -562,25 +455,67 @@ function LayoutCard({
   const cols = parseInt(layout.size[0]!);
   const filled = layout.slots.filter(Boolean).length;
 
+  // Resolve slot IDs to names. useCameras is cached at the LivePage level,
+  // so this is effectively free (TanStack dedupes the query).
+  const cameras = useCameras();
+  const nameById = useMemo(
+    () => new Map((cameras.data ?? []).map((c) => [c.id, c.name])),
+    [cameras.data]
+  );
+
+  // Ordered list of assigned camera names (skip empty slots).
+  const assignedNames = layout.slots
+    .map((id) => (id ? nameById.get(id) : null))
+    .filter((n): n is string => !!n);
+
+  // Compact name list shown below the meta line. First two names, then
+  // "+N" if there are more — caps the height of the card.
+  const NAME_PREVIEW_COUNT = 2;
+  const previewNames = assignedNames.slice(0, NAME_PREVIEW_COUNT);
+  const moreCount = Math.max(0, assignedNames.length - NAME_PREVIEW_COUNT);
+
   return (
     <div
       className={cn(
-        "group relative px-3 py-2.5 transition-colors duration-[120ms]",
+        "group relative px-3 py-2.5 transition-colors duration-120",
         active ? "bg-accent-subtle" : "hover:bg-surface"
       )}
     >
       <button onClick={onClick} className="w-full text-left">
-        {/* Mini grid preview */}
+        {/* Mini grid preview — each filled slot shows the first few chars
+            of the camera name so the card communicates content, not just
+            the layout shape. */}
         <div
           className="mb-2 aspect-video w-full overflow-hidden rounded border border-border bg-canvas-deep"
           style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 1 }}
         >
-          {layout.slots.map((id, i) => (
-            <div
-              key={i}
-              className={cn("rounded-[1px]", id ? "bg-surface-active" : "bg-canvas-deep")}
-            />
-          ))}
+          {layout.slots.map((id, i) => {
+            const name = id ? nameById.get(id) : null;
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "flex items-center justify-center overflow-hidden rounded-[1px]",
+                  id ? "bg-surface-active" : "bg-canvas-deep"
+                )}
+                title={name ?? undefined}
+              >
+                {name && (
+                  <span
+                    className={cn(
+                      "px-0.5 font-mono font-semibold leading-none tracking-tight",
+                      active ? "text-accent-text" : "text-text-secondary"
+                    )}
+                    // Scale down with grid density — names need to fit in a
+                    // small slot. 1×1 / 2×2 fits ~6 chars; 5×5 ~3.
+                    style={{ fontSize: cols <= 2 ? 9 : cols <= 3 ? 7.5 : 6 }}
+                  >
+                    {abbreviate(name, cols)}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <p className={cn("truncate text-[12.5px] font-medium", active ? "text-accent-text" : "text-text-primary")}>
@@ -592,6 +527,19 @@ function LayoutCard({
         <p className="mt-0.5 font-mono text-[10px] text-text-tertiary">
           {layout.size.replace("x", "×")} · {filled} cameras
         </p>
+
+        {/* Camera name preview — first N + "+more" */}
+        {assignedNames.length > 0 && (
+          <p
+            className="mt-1 truncate font-mono text-[10px] text-text-tertiary"
+            title={assignedNames.join(", ")}
+          >
+            {previewNames.join(", ")}
+            {moreCount > 0 && (
+              <span className="text-text-disabled">{` +${moreCount}`}</span>
+            )}
+          </p>
+        )}
       </button>
 
       {/* Delete button — hover-reveal, hidden for last layout */}
@@ -600,7 +548,7 @@ function LayoutCard({
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           aria-label="Delete layout"
           className={cn(
-            "absolute right-2 top-2 rounded p-1 transition-all duration-[120ms]",
+            "absolute right-2 top-2 rounded p-1 transition-all duration-120",
             "text-text-disabled opacity-0 group-hover:opacity-100",
             "hover:bg-status-critical-subtle hover:text-status-critical"
           )}
@@ -620,7 +568,7 @@ function LayoutCard({
         aria-label="Open in new Surveillance window"
         title="Open in new Surveillance window"
         className={cn(
-          "absolute bottom-12 right-2 inline-flex h-6 w-6 items-center justify-center rounded border bg-canvas-deep/90 backdrop-blur transition-all duration-[120ms]",
+          "absolute bottom-12 right-2 inline-flex h-6 w-6 items-center justify-center rounded border bg-canvas-deep/90 backdrop-blur transition-all duration-120",
           "border-border text-text-tertiary opacity-0 group-hover:opacity-100",
           "hover:border-accent hover:text-accent"
         )}

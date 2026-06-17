@@ -51,7 +51,7 @@ export function DateTimePicker({ rangeStart, rangeEnd, onChange }: Props) {
             className={cn(
               "inline-flex h-7 items-center rounded-[3px] border border-border bg-surface px-2",
               "font-mono text-[11px] font-semibold uppercase tracking-[0.04em] text-text-secondary",
-              "transition-colors duration-[120ms] hover:text-text-primary"
+              "transition-colors duration-120 hover:text-text-primary"
             )}
           >
             {q.label}

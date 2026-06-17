@@ -269,7 +269,7 @@ function FilterPill({
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-[3px] px-2.5 font-mono text-[11px] font-semibold tracking-[0.05em] transition-colors duration-[120ms]",
+        "inline-flex h-7 items-center gap-1.5 rounded-[3px] px-2.5 font-mono text-[11px] font-semibold tracking-[0.05em] transition-colors duration-120",
         active
           ? "bg-accent-subtle text-accent-text"
           : "border border-border bg-surface text-text-secondary hover:text-text-primary"

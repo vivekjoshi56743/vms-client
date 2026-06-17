@@ -84,7 +84,7 @@ export function TopBar({ title, actions }: TopBarProps) {
           <DropdownMenuTrigger asChild>
             <button
               aria-label="Switch theme"
-              className="inline-flex h-8 w-8 items-center justify-center rounded text-text-tertiary transition-colors duration-[120ms] hover:bg-surface hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="inline-flex h-8 w-8 items-center justify-center rounded text-text-tertiary transition-colors duration-120 hover:bg-surface hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               <ThemeIcon className="h-4 w-4" />
             </button>
@@ -112,13 +112,13 @@ export function TopBar({ title, actions }: TopBarProps) {
         {/* Notifications (stub) */}
         <button
           aria-label="Notifications"
-          className="inline-flex h-8 w-8 items-center justify-center rounded text-text-tertiary transition-colors duration-[120ms] hover:bg-surface hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="inline-flex h-8 w-8 items-center justify-center rounded text-text-tertiary transition-colors duration-120 hover:bg-surface hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <Bell className="h-4 w-4" />
         </button>
 
         {/* User pill */}
-        <div className="inline-flex h-8 cursor-default items-center gap-2 rounded px-2 transition-colors duration-[120ms] hover:bg-surface">
+        <div className="inline-flex h-8 cursor-default items-center gap-2 rounded px-2 transition-colors duration-120 hover:bg-surface">
           {/* Avatar circle */}
           <span
             className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold text-accent-on-accent"
