@@ -59,3 +59,29 @@ export async function fetchPlaybackDataUrl(
   return `proxy://localhost/${segmentId}?${params.toString()}`;
 }
 
+// Build a proxy URL for a *playback window*: a fresh fMP4 the backend muxes
+// starting at `startISO` for `durationSecs`, via /api/_playback/get. This is
+// how playback "seeks" — the stored recordings are 1-hour fragmented MP4s with
+// no seek index, so we can't byte-seek into them. Instead we ask for a stream
+// that begins exactly at the time we want and play it from t=0. To move to a
+// new time, request a new window. The Rust `proxy` handler (path == "playback")
+// forwards this to the backend, retags HEVC, and returns the buffered stream.
+export function buildPlaybackWindowUrl(
+  cameraId: string,
+  startISO: string,
+  durationSecs: number
+): string {
+  const { token, serverUrl } = useAuthStore.getState();
+  if (!token) throw new Error("Not authenticated");
+  if (!serverUrl) throw new Error("No active server");
+
+  const params = new URLSearchParams({
+    token,
+    host: serverUrl,
+    path: `cam-${cameraId}`,
+    start: startISO,
+    duration: `${Math.max(1, Math.round(durationSecs))}s`,
+  });
+  return `proxy://localhost/playback?${params.toString()}`;
+}
+

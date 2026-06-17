@@ -2,7 +2,77 @@ mod events;
 mod secure_store;
 mod tofu;
 
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
 use tauri::Manager;
+
+/// In-memory LRU of fully-muxed playback windows, keyed by path|start|duration.
+///
+/// WebKit issues many small Range probes against a media resource, and the
+/// backend's `/api/_playback/get` muxer is expensive and non-range — so we
+/// fetch each window ONCE, cache the (retagged) bytes, and serve every range
+/// from memory. Without this, each probe would regenerate the whole ~4 MB
+/// window (the regeneration storm we saw).
+#[derive(Default)]
+struct PlaybackCache {
+    inner: Mutex<PlaybackCacheInner>,
+}
+
+#[derive(Default)]
+struct PlaybackCacheInner {
+    map: HashMap<String, Arc<Vec<u8>>>,
+    order: Vec<String>, // oldest first
+}
+
+const PB_CACHE_MAX: usize = 8;
+
+impl PlaybackCache {
+    fn get(&self, key: &str) -> Option<Arc<Vec<u8>>> {
+        self.inner.lock().unwrap().map.get(key).cloned()
+    }
+    fn put(&self, key: String, bytes: Arc<Vec<u8>>) {
+        let mut g = self.inner.lock().unwrap();
+        if g.map.contains_key(&key) {
+            return;
+        }
+        g.map.insert(key.clone(), bytes);
+        g.order.push(key);
+        while g.order.len() > PB_CACHE_MAX {
+            let oldest = g.order.remove(0);
+            g.map.remove(&oldest);
+        }
+    }
+}
+
+fn err_resp(status: u16, msg: String) -> tauri::http::Response<Vec<u8>> {
+    tauri::http::Response::builder()
+        .status(status)
+        .body(msg.into_bytes())
+        .unwrap()
+}
+
+/// Max bytes pulled from the backend (and held in memory) per proxy request.
+/// WebKit re-requests the next window as it plays/seeks, so a moderate chunk
+/// keeps first-frame and scrub latency low without buffering a whole 400 MB
+/// segment.
+const CHUNK_SIZE: u64 = 4 * 1024 * 1024;
+
+/// Parse a single HTTP byte-range header value like `bytes=0-` or
+/// `bytes=1024-2047`. Returns (start, optional inclusive end). Suffix ranges
+/// (`bytes=-500`) and multi-ranges aren't used by WebKit media loads, so an
+/// unparseable value falls back to "from byte 0".
+fn parse_range(value: &str) -> Option<(u64, Option<u64>)> {
+    let spec = value.trim().strip_prefix("bytes=")?;
+    let first = spec.split(',').next()?;
+    let (s, e) = first.split_once('-')?;
+    let start: u64 = s.trim().parse().ok()?;
+    let end = match e.trim() {
+        "" => None,
+        v => Some(v.parse::<u64>().ok()?),
+    };
+    Some((start, end))
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -27,10 +97,17 @@ pub fn run() {
                 // localhost:8443.
                 let mut token = String::new();
                 let mut host = String::new();
+                // Playback-window mode params (see `buildPlaybackWindowUrl`):
+                let mut pb_path = String::new();
+                let mut pb_start = String::new();
+                let mut pb_duration = String::new();
                 for (k, v) in url::form_urlencoded::parse(query.as_bytes()) {
                     match k.as_ref() {
                         "token" => token = v.into_owned(),
                         "host" => host = v.into_owned(),
+                        "path" => pb_path = v.into_owned(),
+                        "start" => pb_start = v.into_owned(),
+                        "duration" => pb_duration = v.into_owned(),
                         _ => {}
                     }
                 }
@@ -50,60 +127,221 @@ pub fn run() {
 
                 // Strip trailing slash before concatenating the path.
                 let host = host.trim_end_matches('/');
-                let url = format!("{host}/api/recordings/{segment_id}/file");
-                
-                let mut req = state.http.get(&url).header("Authorization", format!("Bearer {token}"));
-                
-                // Forward Range header if WebKit sent one
-                if let Some(r) = request.headers().get("range").and_then(|v| v.to_str().ok()) {
-                    req = req.header("Range", r);
+
+                // Two modes:
+                //  • playback window (path == "playback"): ask the backend to mux
+                //    a fresh fMP4 that *starts at an arbitrary timestamp* via
+                //    /api/_playback/get. This is how we seek — the stored
+                //    recordings are 1-hour fragmented MP4s with no `sidx`, so a
+                //    native byte-seek is impossible; instead we request a stream
+                //    that begins exactly where we want and play it from 0. That
+                //    endpoint is chunked + non-range, so we buffer the whole
+                //    window and return a plain 200.
+                //  • raw segment file (path == segment id): bounded Range relay of
+                //    /api/recordings/{id}/file (used for clip download).
+                let window_mode = segment_id == "playback";
+
+                // Client's Range request (used by both modes).
+                let raw_range = request
+                    .headers()
+                    .get("range")
+                    .and_then(|v| v.to_str().ok())
+                    .map(|s| s.to_string());
+                let (rstart, rend) = raw_range
+                    .as_deref()
+                    .and_then(parse_range)
+                    .unwrap_or((0, None));
+
+                if window_mode {
+                    // ── Playback window: muxed once, cached, range-served ──────
+                    let key = format!("{pb_path}|{pb_start}|{pb_duration}");
+                    let cache = app.state::<PlaybackCache>();
+
+                    let full: Arc<Vec<u8>> = if let Some(c) = cache.get(&key) {
+                        c
+                    } else {
+                        let qs = url::form_urlencoded::Serializer::new(String::new())
+                            .append_pair("format", "fmp4")
+                            .append_pair("duration", &pb_duration)
+                            .append_pair("path", &pb_path)
+                            .append_pair("start", &pb_start)
+                            .finish();
+                        let url = format!("{host}/api/_playback/get?{qs}");
+                        let t0 = std::time::Instant::now();
+                        eprintln!(
+                            "[proxy] window MISS path={pb_path} start={pb_start} dur={pb_duration}"
+                        );
+                        let resp = match state
+                            .http
+                            .get(&url)
+                            .header("Authorization", format!("Bearer {token}"))
+                            .send()
+                            .await
+                        {
+                            Ok(r) => r,
+                            Err(e) => {
+                                eprintln!("[proxy]   <- REQUEST FAILED: {e}");
+                                responder.respond(err_resp(502, e.to_string()));
+                                return;
+                            }
+                        };
+                        if !resp.status().is_success() {
+                            let st = resp.status().as_u16();
+                            let body =
+                                resp.bytes().await.map(|b| b.to_vec()).unwrap_or_default();
+                            eprintln!("[proxy]   <- UPSTREAM ERROR status={st}");
+                            responder.respond(
+                                tauri::http::Response::builder()
+                                    .status(st)
+                                    .header("content-type", "text/plain")
+                                    .body(body)
+                                    .unwrap(),
+                            );
+                            return;
+                        }
+                        let mut v = match resp.bytes().await {
+                            Ok(b) => b.to_vec(),
+                            Err(e) => {
+                                responder.respond(err_resp(500, e.to_string()));
+                                return;
+                            }
+                        };
+                        // Retag HEVC 'hev1' → 'hvc1' in the moov at the front.
+                        let scan = v.len().min(0x10000);
+                        let mut i = 0;
+                        while i + 4 <= scan {
+                            if &v[i..i + 4] == b"hev1" {
+                                v[i..i + 4].copy_from_slice(b"hvc1");
+                            }
+                            i += 1;
+                        }
+                        eprintln!(
+                            "[proxy]   <- muxed+cached bytes={} elapsed={:?}",
+                            v.len(),
+                            t0.elapsed()
+                        );
+                        let arc = Arc::new(v);
+                        cache.put(key, arc.clone());
+                        arc
+                    };
+
+                    // Serve the requested range (or whole resource) from cache.
+                    let total = full.len();
+                    let base = tauri::http::Response::builder()
+                        .header("content-type", "video/mp4")
+                        .header("accept-ranges", "bytes");
+                    let resp = if raw_range.is_some() {
+                        let s = (rstart as usize).min(total);
+                        let e = match rend {
+                            Some(e) => (e as usize + 1).min(total),
+                            None => total,
+                        }
+                        .max(s);
+                        let slice = full[s..e].to_vec();
+                        base.status(206)
+                            .header(
+                                "content-range",
+                                format!("bytes {}-{}/{}", s, e.saturating_sub(1).max(s), total),
+                            )
+                            .header("content-length", slice.len().to_string())
+                            .body(slice)
+                            .unwrap()
+                    } else {
+                        base.status(200)
+                            .header("content-length", total.to_string())
+                            .body(full.as_ref().clone())
+                            .unwrap()
+                    };
+                    responder.respond(resp);
+                    return;
                 }
+
+                // ── Raw segment file: bounded Range relay (clip download) ──────
+                let mut upstream_end = rstart.saturating_add(CHUNK_SIZE - 1);
+                if let Some(e) = rend {
+                    if e < upstream_end {
+                        upstream_end = e;
+                    }
+                }
+                let url = format!("{host}/api/recordings/{segment_id}/file");
+                let t0 = std::time::Instant::now();
+                eprintln!(
+                    "[proxy] seg={} client_range={:?} -> upstream bytes={}-{}",
+                    &segment_id[..segment_id.len().min(8)],
+                    raw_range,
+                    rstart,
+                    upstream_end
+                );
+                let req = state
+                    .http
+                    .get(&url)
+                    .header("Authorization", format!("Bearer {token}"))
+                    .header("Range", format!("bytes={rstart}-{upstream_end}"));
 
                 match req.send().await {
                     Ok(resp) => {
                         let status = resp.status();
-                        let mut builder = tauri::http::Response::builder().status(status.as_u16());
-                        
-                        // Copy essential headers
-                        let ct = resp.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("video/mp4");
-                        builder = builder.header("content-type", ct);
-                        
-                        if let Some(cr) = resp.headers().get("content-range").and_then(|v| v.to_str().ok()) {
-                            builder = builder.header("content-range", cr);
+                        let content_type = resp
+                            .headers()
+                            .get("content-type")
+                            .and_then(|v| v.to_str().ok())
+                            .unwrap_or("video/mp4")
+                            .to_string();
+                        let content_range = resp
+                            .headers()
+                            .get("content-range")
+                            .and_then(|v| v.to_str().ok())
+                            .map(|s| s.to_string());
+
+                        if !status.is_success() {
+                            let body =
+                                resp.bytes().await.map(|b| b.to_vec()).unwrap_or_default();
+                            responder.respond(
+                                tauri::http::Response::builder()
+                                    .status(status.as_u16())
+                                    .header("content-type", content_type)
+                                    .body(body)
+                                    .unwrap(),
+                            );
+                            return;
                         }
-                        if let Some(cl) = resp.headers().get("content-length").and_then(|v| v.to_str().ok()) {
-                            builder = builder.header("content-length", cl);
-                        }
-                        builder = builder.header("accept-ranges", "bytes");
 
                         match resp.bytes().await {
                             Ok(bytes) => {
                                 let mut vec = bytes.to_vec();
-                                
-                                // On-the-fly codec tagging: WebKit strictly rejects HEVC 'hev1' tags.
-                                // It requires 'hvc1'. We scan the chunk for 'hev1' and overwrite it.
-                                // Since both are 4 bytes, this doesn't change file size or range offsets.
-                                let hev1 = b"hev1";
-                                let hvc1 = b"hvc1";
-                                for i in 0..vec.len().saturating_sub(3) {
-                                    if &vec[i..i+4] == hev1 {
-                                        vec[i..i+4].copy_from_slice(hvc1);
+                                if rstart == 0 {
+                                    let scan = vec.len().min(0x10000);
+                                    let mut i = 0;
+                                    while i + 4 <= scan {
+                                        if &vec[i..i + 4] == b"hev1" {
+                                            vec[i..i + 4].copy_from_slice(b"hvc1");
+                                        }
+                                        i += 1;
                                     }
                                 }
-                                
+                                let len = vec.len();
+                                eprintln!(
+                                    "[proxy]   <- status={} bytes={} elapsed={:?}",
+                                    status.as_u16(),
+                                    len,
+                                    t0.elapsed()
+                                );
+                                let mut builder = tauri::http::Response::builder()
+                                    .status(206)
+                                    .header("content-type", content_type)
+                                    .header("accept-ranges", "bytes")
+                                    .header("content-length", len.to_string());
+                                if let Some(cr) = content_range {
+                                    builder = builder.header("content-range", cr);
+                                }
                                 responder.respond(builder.body(vec).unwrap());
                             }
-                            Err(e) => {
-                                responder.respond(
-                                    tauri::http::Response::builder().status(500).body(e.to_string().into_bytes()).unwrap()
-                                );
-                            }
+                            Err(e) => responder.respond(err_resp(500, e.to_string())),
                         }
                     }
                     Err(e) => {
-                        responder.respond(
-                            tauri::http::Response::builder().status(502).body(e.to_string().into_bytes()).unwrap()
-                        );
+                        eprintln!("[proxy]   <- REQUEST FAILED: {e}");
+                        responder.respond(err_resp(502, e.to_string()));
                     }
                 }
             });
@@ -118,6 +356,7 @@ pub fn run() {
                 })?;
             app.manage(tofu_state);
             app.manage(events::EventStreamState::default());
+            app.manage(PlaybackCache::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
