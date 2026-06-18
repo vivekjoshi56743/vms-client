@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { connectWhep, type WhepSession } from "@/lib/whep";
 import { isTauri } from "@/lib/fingerprint";
 import { TauriHlsLoader } from "@/lib/hls-tauri-loader";
+import { waitForHlsReady } from "@/lib/hls-ready";
 
 export type PlayerState = "idle" | "connecting" | "playing" | "error";
 
@@ -312,8 +313,23 @@ function HlsPlayer({
     if (!el) return;
     onConnecting();
 
-    if (Hls.isSupported()) {
-      const hls = new Hls({
+    // All three target WebViews (WKWebView, WebView2, WebKitGTK) support MSE, so
+    // this always holds. We deliberately do NOT fall back to native `<video src>`
+    // HLS: that fetches directly from the WebView, which is blocked in the
+    // packaged app (mixed content / self-signed TLS) — the same failure the
+    // custom loader exists to fix.
+    if (!Hls.isSupported()) {
+      onError("HLS not supported in this WebView");
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    let hls: Hls | null = null;
+
+    const start = () => {
+      if (cancelled || !videoRef.current) return;
+      hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
         // Minimise live latency: stay 1 segment behind live edge, skip forward
@@ -335,22 +351,34 @@ function HlsPlayer({
       hls.on(Hls.Events.ERROR, (_e, data) => {
         if (data.fatal) {
           onError(data.details ?? "HLS fatal error");
-          hls.destroy();
+          hls?.destroy();
         }
       });
       el.addEventListener("playing", onPlaying, { once: true });
-      return () => {
-        hls.destroy();
-        el.removeEventListener("playing", onPlaying);
-      };
+    };
+
+    // Probe the manifest first (Tauri only) so we mount hls.js on a stream
+    // that's already serving — the server may need a moment to spin up the
+    // on-demand H.264 transcode. The connecting overlay covers the wait; hls.js
+    // never sees the transient 404. In a plain browser the probe would hit CORS
+    // (it goes out as a real cross-origin fetch), so skip it and let hls.js load
+    // directly.
+    if (isTauri()) {
+      waitForHlsReady(url, { signal: controller.signal })
+        .then(() => start())
+        .catch((e: unknown) => {
+          if (!cancelled) onError(e instanceof Error ? e.message : "stream not ready");
+        });
+    } else {
+      start();
     }
 
-    // All three target WebViews (WKWebView, WebView2, WebKitGTK) support MSE, so
-    // the branch above always runs. We deliberately do NOT fall back to native
-    // `<video src>` HLS: that fetches the manifest/segments directly from the
-    // WebView, which is blocked in the packaged app (mixed content /
-    // self-signed TLS) — the same failure the custom loader above exists to fix.
-    onError("HLS not supported in this WebView");
+    return () => {
+      cancelled = true;
+      controller.abort();
+      hls?.destroy();
+      el.removeEventListener("playing", onPlaying);
+    };
   }, [url]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
