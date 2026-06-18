@@ -9,8 +9,7 @@ import { VideoGrid } from "@/components/video/VideoGrid";
 import { ConnectingSplash } from "@/components/video/ConnectingSplash";
 import type { PlayerState } from "@/components/video/VideoPlayer";
 import { useCameras, useAllCameraHealth } from "@/hooks/useCameras";
-import { useStreams } from "@/hooks/useStream";
-import { ensureStream } from "@/api/streams";
+import { useStreams, streamQueryKey, fetchStream } from "@/hooks/useStream";
 import { useLayoutsStore, type GridSize, type Layout } from "@/stores/layouts";
 import { useUIStore } from "@/stores/ui";
 import { openSurveillanceWindow } from "@/lib/surveillance-window";
@@ -73,8 +72,8 @@ export function LivePage() {
     prefetchedRef.current = true;
     for (const cam of cameras.data) {
       void queryClient.prefetchQuery({
-        queryKey: ["stream", cam.id],
-        queryFn:  () => ensureStream(cam.id),
+        queryKey: streamQueryKey(cam.id),
+        queryFn:  () => fetchStream(cam.id),
         staleTime: Infinity,
       });
     }

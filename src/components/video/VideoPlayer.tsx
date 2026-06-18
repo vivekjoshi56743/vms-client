@@ -38,6 +38,14 @@ function detectKind(url: string): UrlKind {
   return "unsupported";
 }
 
+// WHEP needs WebRTC. WebView2 (Windows) and WKWebView (macOS) always provide it,
+// but some Linux WebKitGTK builds ship without it — `RTCPeerConnection` is then
+// undefined and `new RTCPeerConnection()` throws "Can't find variable". Detect
+// that up front so we can use the camera's HLS stream instead of crashing.
+function webrtcSupported(): boolean {
+  return typeof RTCPeerConnection !== "undefined";
+}
+
 export function VideoPlayer({
   url,
   hlsFallback,
@@ -72,7 +80,23 @@ export function VideoPlayer({
   }
 
   const activeUrl = hlsFallbackUrl ?? url;
-  const kind = detectKind(activeUrl);
+  let kind = detectKind(activeUrl);
+  let playUrl = activeUrl;
+  let unsupportedReason = "Unsupported source";
+
+  // If we'd use WHEP but this WebView has no WebRTC (some Linux WebKitGTK
+  // builds), transparently switch to the camera's HLS stream. `hlsFallback`
+  // is the .m3u8 the backend returns alongside the WHEP URL. If there's no HLS
+  // URL to fall back to, surface a clear message instead of letting WHEP throw.
+  if (kind === "whep" && !webrtcSupported()) {
+    if (hlsFallback) {
+      playUrl = hlsFallback;
+      kind = "hls";
+    } else {
+      kind = "unsupported";
+      unsupportedReason = "Live video isn't supported in this WebView";
+    }
+  }
 
   function handleError(msg: string, opts?: { whepUnsupportedCodec?: boolean; hlsFallback?: string }) {
     if (opts?.whepUnsupportedCodec && opts.hlsFallback) {
@@ -96,8 +120,8 @@ export function VideoPlayer({
       {/* Player layer */}
       {kind === "whep" && (
         <WhepPlayer
-          key={`whep-${activeUrl}-${retryKey}`}
-          url={activeUrl}
+          key={`whep-${playUrl}-${retryKey}`}
+          url={playUrl}
           hlsFallback={hlsFallback ?? undefined}
           muted={muted}
           onPlaying={() => updateState("playing")}
@@ -107,8 +131,8 @@ export function VideoPlayer({
       )}
       {kind === "hls" && (
         <HlsPlayer
-          key={`hls-${activeUrl}-${retryKey}`}
-          url={activeUrl}
+          key={`hls-${playUrl}-${retryKey}`}
+          url={playUrl}
           muted={muted}
           controls={controls}
           onPlaying={() => updateState("playing")}
@@ -119,7 +143,7 @@ export function VideoPlayer({
       {kind === "unsupported" && (
         <div className="flex h-full w-full items-center justify-center bg-canvas-deep">
           <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-text-tertiary">
-            Unsupported source
+            {unsupportedReason}
           </p>
         </div>
       )}

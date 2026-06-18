@@ -589,7 +589,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Registers the camera as a MediaMTX source (idempotent) and returns all available playback URLs: WebRTC/WHEP, HLS, RTSP, RTMP, SRT. Use whichever format your player supports.",
+                "description": "Registers the camera as a MediaMTX source (idempotent) and returns all available live playback URLs: WebRTC/WHEP, HLS, RTSP, RTMP, SRT, all carrying the camera's NATIVE codec. Pass vcodec=h264 to also get a guaranteed-H.264 HLS/WHEP variant (hls_h264 / webrtc_h264), transcoded on demand for WebViews without an HEVC decoder. The H.264 transcode is shared across all viewers, started on first request, and torn down when no one is watching.",
                 "produces": [
                     "application/json"
                 ],
@@ -604,6 +604,15 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "h264"
+                        ],
+                        "type": "string",
+                        "description": "Set to 'h264' to also return a guaranteed-H.264 HLS/WHEP variant",
+                        "name": "vcodec",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -625,8 +634,20 @@
                             "$ref": "#/definitions/apitypes.ErrorResponse"
                         }
                     },
+                    "501": {
+                        "description": "vcodec=h264 requested but ffmpeg is not installed on the server",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
                     "502": {
                         "description": "MediaMTX path registration failed",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "vcodec=h264 requested but too many concurrent transcodes are running",
                         "schema": {
                             "$ref": "#/definitions/apitypes.ErrorResponse"
                         }
@@ -1491,6 +1512,11 @@
                     "type": "string",
                     "example": "https://192.168.1.10:8443/api/_playback/get?path=cam-b0b392...\u0026start=2026-05-14T10:30:00Z\u0026duration=300s\u0026format=fmp4"
                 },
+                "fmp4_h264": {
+                    "description": "FMP4H264 is the same stream re-encoded to H.264 (AVC) by the server.\nUse it for clients without an HEVC decoder (Windows WebView2, Linux\nWebKitGTK). Requires ffmpeg on the server; returns 501 if unavailable.",
+                    "type": "string",
+                    "example": "https://192.168.1.10:8443/api/_playback/get?path=cam-b0b392...\u0026start=2026-05-14T10:30:00Z\u0026duration=300s\u0026format=fmp4\u0026vcodec=h264"
+                },
                 "path": {
                     "type": "string",
                     "example": "cam-b0b392098f5754acf95a144effdd060c"
@@ -1555,9 +1581,23 @@
                     "type": "string",
                     "example": "b0b392098f5754acf95a144effdd060c"
                 },
+                "h264_path": {
+                    "description": "H264Path is the MediaMTX path name serving the guaranteed-H.264 variant.\nPresent only when vcodec=h264 was requested. When the camera is already\nH.264 it equals Path (no transcode); otherwise it is \"\u003cpath\u003e-h264\".",
+                    "type": "string",
+                    "example": "cam-b0b392098f5754acf95a144effdd060c-h264"
+                },
+                "h264_transcode": {
+                    "description": "H264Transcode reports whether a server-side transcode is running to\nproduce the H.264 variant. false means the camera was already H.264 and\nthe h264 URLs simply point at the native path (no extra CPU cost).\nPresent only when vcodec=h264 was requested.",
+                    "type": "boolean"
+                },
                 "hls": {
                     "type": "string",
                     "example": "http://192.168.1.10:8888/cam-b0b392.../index.m3u8"
+                },
+                "hls_h264": {
+                    "description": "HLSH264 is the HLS (fMP4) playlist whose video is guaranteed H.264 —\nplayable on every WebView. Present only when vcodec=h264 was requested.",
+                    "type": "string",
+                    "example": "http://192.168.1.10:8888/cam-b0b392...-h264/index.m3u8"
                 },
                 "path": {
                     "type": "string",
@@ -1578,6 +1618,11 @@
                 "webrtc": {
                     "type": "string",
                     "example": "http://192.168.1.10:8889/cam-b0b392.../whep"
+                },
+                "webrtc_h264": {
+                    "description": "WebRTCH264 is the WHEP endpoint for the guaranteed-H.264 variant (low\nlatency). Present only when vcodec=h264 was requested.",
+                    "type": "string",
+                    "example": "http://192.168.1.10:8889/cam-b0b392...-h264/whep"
                 }
             }
         },
