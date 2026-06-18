@@ -160,13 +160,23 @@ pub fn run() {
                     let full: Arc<Vec<u8>> = if let Some(c) = cache.get(&key) {
                         c
                     } else {
-                        let qs = url::form_urlencoded::Serializer::new(String::new())
-                            .append_pair("format", "fmp4")
-                            .append_pair("duration", &pb_duration)
-                            .append_pair("path", &pb_path)
-                            .append_pair("start", &pb_start)
-                            .finish();
-                        let url = format!("{host}/api/_playback/get?{qs}");
+                        // Build the upstream query in a scope so the (non-Send)
+                        // url-encoding serializer is dropped before the await.
+                        let url = {
+                            let mut ser = url::form_urlencoded::Serializer::new(String::new());
+                            ser.append_pair("format", "fmp4")
+                                .append_pair("duration", &pb_duration)
+                                .append_pair("path", &pb_path)
+                                .append_pair("start", &pb_start);
+                            // macOS WKWebView decodes HEVC natively, so keep the
+                            // backend's cheap HEVC passthrough there. WebView2
+                            // (Windows/Chromium) and WebKitGTK (Linux) have no
+                            // HEVC decoder, so ask the backend for H.264.
+                            if !cfg!(target_os = "macos") {
+                                ser.append_pair("vcodec", "h264");
+                            }
+                            format!("{host}/api/_playback/get?{}", ser.finish())
+                        };
                         let t0 = std::time::Instant::now();
                         eprintln!(
                             "[proxy] window MISS path={pb_path} start={pb_start} dur={pb_duration}"
@@ -206,14 +216,18 @@ pub fn run() {
                                 return;
                             }
                         };
-                        // Retag HEVC 'hev1' → 'hvc1' in the moov at the front.
-                        let scan = v.len().min(0x10000);
-                        let mut i = 0;
-                        while i + 4 <= scan {
-                            if &v[i..i + 4] == b"hev1" {
-                                v[i..i + 4].copy_from_slice(b"hvc1");
+                        // macOS only: retag HEVC 'hev1' → 'hvc1' in the moov at
+                        // the front (WKWebView requires 'hvc1'). Other platforms
+                        // get H.264 above, which has no such tag.
+                        if cfg!(target_os = "macos") {
+                            let scan = v.len().min(0x10000);
+                            let mut i = 0;
+                            while i + 4 <= scan {
+                                if &v[i..i + 4] == b"hev1" {
+                                    v[i..i + 4].copy_from_slice(b"hvc1");
+                                }
+                                i += 1;
                             }
-                            i += 1;
                         }
                         eprintln!(
                             "[proxy]   <- muxed+cached bytes={} elapsed={:?}",
