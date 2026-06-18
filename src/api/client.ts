@@ -1,7 +1,7 @@
 import createClient, { type Middleware } from "openapi-fetch";
 
 import { useAuthStore } from "@/stores/auth";
-import { tauriFetch } from "@/api/tauri-fetch";
+import { tauriFetch } from "@/lib/tauri-fetch";
 import type { paths } from "@/api/schema";
 
 // Single typed entry point for the Supervision backend.

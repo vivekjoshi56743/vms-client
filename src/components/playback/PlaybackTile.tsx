@@ -4,7 +4,7 @@ import { Loader2, AlertTriangle, VideoOff } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRecordings } from "@/hooks/usePlayback";
 import { usePlaybackStore } from "@/stores/playback";
-import { buildPlaybackWindowUrl, type RecordingSegment } from "@/api/playback";
+import { fetchPlaybackWindow, type RecordingSegment } from "@/api/playback";
 
 interface Props {
   cameraId: string;
@@ -12,21 +12,20 @@ interface Props {
   className?: string;
 }
 
-// How many seconds of footage each playback window covers. The recordings have
-// no seek index, so we can't byte-seek a 1-hour file; instead we ask the
-// backend to mux a fresh fMP4 starting at the time we want (see
-// `buildPlaybackWindowUrl`) and play it from t=0. Smaller windows = lower
-// load latency but more frequent boundaries; larger = the reverse. 60s with
-// double-buffered prefetch keeps forward playback seamless.
+// Seconds of footage per playback window. The recordings have no seek index,
+// so we can't byte-seek a long file; instead the backend muxes a fresh fMP4
+// starting at the time we want and we play it from t=0 (see fetchPlaybackWindow).
+// 60s + double-buffered prefetch keeps forward playback seamless.
 const WINDOW_SECS = 60;
-// Two adjacent segments separated by less than this are treated as one
-// continuous run (cameras restart recording on segment rollover).
+// Two adjacent segments closer than this count as one continuous run.
 const GAP_TOL_MS = 2000;
+// Cap on cached window blobs held in memory (windows are small, ~MB each).
+const BLOB_CACHE_MAX = 12;
 
 interface Win {
   startMs: number;
   durS: number;
-  url: string;
+  url: string | null; // blob: URL once fetched; null while loading
 }
 interface Run {
   startMs: number;
@@ -35,12 +34,14 @@ interface Run {
 
 // Per-camera playback unit, driven by global store state (time + play + speed).
 // The "primary" tile is the time master: its active video's timeupdate pushes
-// globalTimeMs forward. Other tiles follow globalTimeMs.
+// globalTimeMs forward; other tiles follow it.
 //
-// Playback is double-buffered across two <video> elements (slots 0 and 1): one
-// plays the current window while the other prefetches the next, so forward
-// playback crosses window boundaries without a stall. A seek (globalTimeMs
-// jumping outside the loaded windows) reloads the active slot at the new time.
+// Each window is fetched as an in-memory blob: URL via the `playback_window`
+// IPC command (NOT the custom proxy:// scheme — that breaks <video> on Windows
+// WebView2 / Linux WebKitGTK). Playback is double-buffered across two <video>
+// elements: one plays the current window while the other prefetches the next,
+// so forward playback crosses window boundaries without a stall. A seek
+// reloads the active slot at the new time.
 export function PlaybackTile({ cameraId, cameraName, className }: Props) {
   const rangeStart = usePlaybackStore((s) => s.rangeStart);
   const rangeEnd = usePlaybackStore((s) => s.rangeEnd);
@@ -59,8 +60,7 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
     rangeStart && rangeEnd ? { from: rangeStart, to: rangeEnd } : undefined
   );
 
-  // Merge segments into contiguous footage runs so windows never span a gap
-  // and we know where playback must stop or jump.
+  // Merge segments into contiguous footage runs so windows never span a gap.
   const runs = useMemo<Run[]>(() => {
     const segs = [...(recordings.data?.segments ?? [])].sort(
       (a: RecordingSegment, b: RecordingSegment) =>
@@ -88,20 +88,14 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
     (t: number) => runs.find((r) => r.startMs > t)?.startMs ?? null,
     [runs]
   );
-
-  const clampWindow = useCallback(
-    (startMs: number): Win | null => {
+  const windowDur = useCallback(
+    (startMs: number): number | null => {
       const run = runAt(startMs);
       if (!run) return null;
       const durS = Math.min(WINDOW_SECS, Math.ceil((run.endMs - startMs) / 1000));
-      if (durS < 1) return null;
-      return {
-        startMs,
-        durS,
-        url: buildPlaybackWindowUrl(cameraId, new Date(startMs).toISOString(), durS),
-      };
+      return durS >= 1 ? durS : null;
     },
-    [runAt, cameraId]
+    [runAt]
   );
 
   // ── Double-buffer state ──────────────────────────────────────────────────
@@ -114,57 +108,130 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
   const v1 = useRef<HTMLVideoElement>(null);
   const videoRefs = useMemo(() => [v0, v1] as const, []);
 
-  // Idempotent slot setter — bails when the slot already holds this window so
-  // the reconcile effect converges instead of looping.
-  const setSlot = useCallback((idx: 0 | 1, win: Win | null) => {
+  // blob: URL cache keyed by window startMs (+ in-flight guard).
+  const blobs = useRef<Map<number, string>>(new Map());
+  const inflight = useRef<Set<number>>(new Set());
+
+  // Set a slot to the window starting at startMs (null = clear). Idempotent.
+  const setSlotWindow = useCallback(
+    (idx: 0 | 1, startMs: number | null) => {
+      setSlots((prev) => {
+        if (startMs == null) {
+          if (prev[idx] == null) return prev;
+          const n: [Win | null, Win | null] = [prev[0], prev[1]];
+          n[idx] = null;
+          return n;
+        }
+        if (prev[idx]?.startMs === startMs) return prev;
+        const durS = windowDur(startMs);
+        if (durS == null) {
+          if (prev[idx] == null) return prev;
+          const n: [Win | null, Win | null] = [prev[0], prev[1]];
+          n[idx] = null;
+          return n;
+        }
+        const n: [Win | null, Win | null] = [prev[0], prev[1]];
+        n[idx] = { startMs, durS, url: blobs.current.get(startMs) ?? null };
+        return n;
+      });
+    },
+    [windowDur]
+  );
+
+  // Apply a freshly-loaded blob URL to whichever slot(s) want that window.
+  const applyUrl = useCallback((startMs: number, url: string) => {
     setSlots((prev) => {
-      const cur = prev[idx];
-      if (cur?.startMs === win?.startMs && cur?.durS === win?.durS) return prev;
-      const next: [Win | null, Win | null] = [prev[0], prev[1]];
-      next[idx] = win;
-      return next;
+      let changed = false;
+      const n = prev.map((s) => {
+        if (s && s.startMs === startMs && s.url !== url) {
+          changed = true;
+          return { ...s, url };
+        }
+        return s;
+      }) as [Win | null, Win | null];
+      return changed ? n : prev;
     });
   }, []);
+
+  // Fetch the blob for a window if not cached / already loading.
+  const loadBlob = useCallback(
+    (startMs: number, durS: number) => {
+      const cached = blobs.current.get(startMs);
+      if (cached) {
+        applyUrl(startMs, cached);
+        return;
+      }
+      if (inflight.current.has(startMs)) return;
+      inflight.current.add(startMs);
+      fetchPlaybackWindow(cameraId, new Date(startMs).toISOString(), durS)
+        .then((url) => {
+          blobs.current.set(startMs, url);
+          // Evict oldest blobs not currently held by a slot.
+          if (blobs.current.size > BLOB_CACHE_MAX) {
+            const keep = new Set(
+              ([0, 1] as const).map((i) => slotStarts.current[i]).filter((x): x is number => x != null)
+            );
+            for (const k of [...blobs.current.keys()]) {
+              if (blobs.current.size <= BLOB_CACHE_MAX) break;
+              if (keep.has(k)) continue;
+              URL.revokeObjectURL(blobs.current.get(k)!);
+              blobs.current.delete(k);
+            }
+          }
+          applyUrl(startMs, url);
+        })
+        .catch((e) => setErrorMsg(e?.message ? String(e.message) : String(e)))
+        .finally(() => inflight.current.delete(startMs));
+    },
+    [cameraId, applyUrl]
+  );
+
+  // Track current slot window starts (for eviction) + revoke all on unmount.
+  const slotStarts = useRef<[number | null, number | null]>([null, null]);
+  useEffect(() => {
+    slotStarts.current = [slots[0]?.startMs ?? null, slots[1]?.startMs ?? null];
+  }, [slots]);
+  useEffect(() => {
+    const cache = blobs.current;
+    return () => {
+      for (const url of cache.values()) URL.revokeObjectURL(url);
+      cache.clear();
+    };
+  }, []);
+
+  // Fetch blobs for any slot still missing its URL.
+  useEffect(() => {
+    slots.forEach((s) => {
+      if (s && s.url == null) loadBlob(s.startMs, s.durS);
+    });
+  }, [slots, loadBlob]);
 
   const covers = (w: Win | null, t: number) =>
     !!w && t >= w.startMs && t < w.startMs + w.durS * 1000;
 
   // Reconcile: ensure the active slot covers globalTimeMs.
-  //  • already covered → nothing to do (primary plays through its window).
-  //  • covered by the prefetched slot → swap to it (seamless boundary).
-  //  • otherwise → (re)load the active slot at globalTimeMs (seek / initial / gap).
   useEffect(() => {
     const otherIdx: 0 | 1 = active === 0 ? 1 : 0;
-    const activeWin = slots[active];
-    const otherWin = slots[otherIdx];
-
-    if (covers(activeWin, globalTimeMs)) return;
-    if (covers(otherWin, globalTimeMs)) {
+    if (covers(slots[active], globalTimeMs)) return;
+    if (covers(slots[otherIdx], globalTimeMs)) {
       setActive(otherIdx);
       return;
     }
     setErrorMsg(null);
-    if (runAt(globalTimeMs)) {
-      setSlot(active, clampWindow(globalTimeMs));
-    } else {
-      setSlot(active, null); // no footage here
-    }
-  }, [globalTimeMs, slots, active, runs, runAt, clampWindow, setSlot]);
+    setSlotWindow(active, runAt(globalTimeMs) ? globalTimeMs : null);
+  }, [globalTimeMs, slots, active, runs, runAt, setSlotWindow]);
 
-  // Prefetch the next contiguous window into the inactive slot while the
-  // primary tile is playing, so the boundary swap is instant.
+  // Prefetch the next contiguous window into the inactive slot while playing.
   useEffect(() => {
     if (!isPrimary || !isPlaying) return;
     const activeWin = slots[active];
     if (!activeWin) return;
     const nextStart = activeWin.startMs + activeWin.durS * 1000;
     if (!runAt(nextStart)) return;
-    const otherIdx: 0 | 1 = active === 0 ? 1 : 0;
-    setSlot(otherIdx, clampWindow(nextStart));
-  }, [isPrimary, isPlaying, slots, active, runAt, clampWindow, setSlot]);
+    setSlotWindow(active === 0 ? 1 : 0, nextStart);
+  }, [isPrimary, isPlaying, slots, active, runAt, setSlotWindow]);
 
-  // Drive play/pause/rate: only the active video plays; the prefetch video
-  // stays paused (it just buffers).
+  // Drive play/pause/rate: only the active video plays.
   useEffect(() => {
     videoRefs.forEach((ref, i) => {
       const el = ref.current;
@@ -180,6 +247,12 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
 
   const activeWin = slots[active];
   const hasFootage = !!runAt(globalTimeMs);
+
+  // Reflect the active video's readiness as the loading spinner.
+  useEffect(() => {
+    const el = videoRefs[active].current;
+    setLoading(!!activeWin && (!activeWin.url || !el || el.readyState < 3));
+  }, [active, activeWin, videoRefs]);
 
   // ── Per-video event handlers ─────────────────────────────────────────────
   const onCanPlay = (i: 0 | 1) => {
@@ -207,9 +280,7 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
     if (!win) return;
     const nextStart = win.startMs + win.durS * 1000;
     if (runAt(nextStart)) {
-      // Prefetched slot should already cover this — nudge global time so
-      // reconcile swaps to it.
-      reportTime(nextStart);
+      reportTime(nextStart); // reconcile swaps to the prefetched slot
     } else {
       const jump = nextRunStart(win.startMs);
       if (jump != null) reportTime(jump);
@@ -219,18 +290,9 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
 
   const onError = (i: 0 | 1) => {
     if (i !== active) return;
-    const el = videoRefs[i].current;
     setLoading(false);
-    setErrorMsg(el?.error?.message || "Playback failed");
+    setErrorMsg(videoRefs[i].current?.error?.message || "Playback failed");
   };
-
-  // Reflect the active video's readiness as the loading spinner. On a seamless
-  // swap to an already-buffered prefetch video this clears immediately (no new
-  // `canplay` fires); on a fresh load it stays until `canplay`.
-  useEffect(() => {
-    const el = videoRefs[active].current;
-    setLoading(!!activeWin && (!el || el.readyState < 3));
-  }, [active, activeWin, videoRefs]);
 
   return (
     <div

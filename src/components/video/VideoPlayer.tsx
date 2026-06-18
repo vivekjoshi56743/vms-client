@@ -5,6 +5,8 @@ import { Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { connectWhep, type WhepSession } from "@/lib/whep";
+import { isTauri } from "@/lib/fingerprint";
+import { TauriHlsLoader } from "@/lib/hls-tauri-loader";
 
 export type PlayerState = "idle" | "connecting" | "playing" | "error";
 
@@ -21,16 +23,19 @@ interface Props {
 }
 
 // URL type detection — order matters (WHEP check before generic http).
-type UrlKind = "whep" | "hls" | "native" | "unknown";
+// Live streams are always WHEP or an HLS .m3u8 from MediaMTX. Direct-file
+// (fMP4) playback does NOT go through VideoPlayer — it uses PlaybackTile's
+// IPC→blob path, because a direct `<video src>` against the backend is blocked
+// in the packaged WebView (see PlaybackTile / src-tauri/src/lib.rs).
+type UrlKind = "whep" | "hls" | "unsupported";
 
 function detectKind(url: string): UrlKind {
   const lower = url.toLowerCase();
   if (lower.includes("/whep")) return "whep";
-  if (lower.includes(".m3u8") || lower.includes("index.m3u8")) return "hls";
-  if (lower.endsWith(".mp4") || lower.endsWith(".fmp4") || lower.includes("fmp4")) return "native";
-  // Fallback: treat as HLS if it's an http(s) URL without a whep path
+  if (lower.includes(".m3u8")) return "hls";
+  // Any other http(s) stream URL is served as HLS by the backend (MediaMTX).
   if (lower.startsWith("http")) return "hls";
-  return "unknown";
+  return "unsupported";
 }
 
 export function VideoPlayer({
@@ -111,16 +116,12 @@ export function VideoPlayer({
           onError={handleError}
         />
       )}
-      {(kind === "native" || kind === "unknown") && (
-        <NativePlayer
-          key={`native-${activeUrl}-${retryKey}`}
-          url={activeUrl}
-          muted={muted}
-          controls={controls}
-          onPlaying={() => updateState("playing")}
-          onConnecting={() => updateState("connecting")}
-          onError={handleError}
-        />
+      {kind === "unsupported" && (
+        <div className="flex h-full w-full items-center justify-center bg-canvas-deep">
+          <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-text-tertiary">
+            Unsupported source
+          </p>
+        </div>
       )}
 
       {/* Connecting overlay — shimmer background + spinner. Replaces a pure
@@ -297,6 +298,10 @@ function HlsPlayer({
         liveMaxLatencyDuration: 4,
         maxBufferLength: 4,
         backBufferLength: 4,
+        // In the packaged app the WebView can't fetch the manifest/segments
+        // directly (mixed content + self-signed TLS), so route them through
+        // the Rust shim. In a plain browser, keep hls.js's default loader.
+        ...(isTauri() ? { loader: TauriHlsLoader } : {}),
       });
       hls.loadSource(url);
       hls.attachMedia(el);
@@ -316,17 +321,11 @@ function HlsPlayer({
       };
     }
 
-    // Native HLS (Safari / WKWebView).
-    if (el.canPlayType("application/vnd.apple.mpegurl")) {
-      el.src = url;
-      el.addEventListener("playing", onPlaying, { once: true });
-      el.addEventListener("error", () => onError("Native HLS error"), { once: true });
-      el.play().catch(() => {});
-      return () => {
-        el.removeEventListener("playing", onPlaying);
-      };
-    }
-
+    // All three target WebViews (WKWebView, WebView2, WebKitGTK) support MSE, so
+    // the branch above always runs. We deliberately do NOT fall back to native
+    // `<video src>` HLS: that fetches the manifest/segments directly from the
+    // WebView, which is blocked in the packaged app (mixed content /
+    // self-signed TLS) — the same failure the custom loader above exists to fix.
     onError("HLS not supported in this WebView");
   }, [url]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -342,45 +341,3 @@ function HlsPlayer({
   );
 }
 
-// ─── Native sub-player ───────────────────────────────────────────────────────
-
-function NativePlayer({
-  url,
-  muted,
-  controls,
-  onPlaying,
-  onConnecting,
-  onError,
-}: {
-  url: string;
-  muted: boolean;
-  controls: boolean;
-  onPlaying: () => void;
-  onConnecting: () => void;
-  onError: (msg: string) => void;
-}) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    onConnecting();
-    el.addEventListener("playing", onPlaying, { once: true });
-    el.addEventListener("error", () => onError("Video playback error"), { once: true });
-    return () => {
-      el.removeEventListener("playing", onPlaying);
-    };
-  }, [url]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return (
-    <video
-      ref={videoRef}
-      src={url}
-      className="h-full w-full object-contain"
-      muted={muted}
-      playsInline
-      autoPlay
-      controls={controls}
-    />
-  );
-}

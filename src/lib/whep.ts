@@ -5,12 +5,22 @@
 //   2. Server responds 201 with Content-Type: application/sdp, body = SDP answer.
 //   3. Set the answer on the RTCPeerConnection → ICE runs → video flows.
 //
-// We use native browser fetch (not tauriFetch) because:
-//   a) WHEP signaling goes to MediaMTX's HTTP port (typically 8889), not the
-//      API server's TOFU-pinned port.
-//   b) The RTCPeerConnection is a browser primitive that expects the SDP to
-//      come from a standard Response — routing through Rust would add latency
-//      for no security gain on a plain HTTP connection.
+// The signaling POST routes through `tauriFetch` → `tofu_http_request` (Rust),
+// NOT the browser's native fetch. This is mandatory in the packaged app:
+//   • The packaged WebView serves from a SECURE origin (`tauri://localhost` on
+//     macOS). A native `fetch()` to MediaMTX's plain-HTTP port (typically 8889)
+//     is mixed content and gets blocked — WKWebView reports it as the opaque
+//     "Load failed". (In `tauri dev` the origin is `http://localhost:1420`, an
+//     insecure context, so native fetch happened to work — masking the bug.)
+//   • If MediaMTX serves WHEP over HTTPS with the backend's self-signed cert,
+//     only the Rust pinning client trusts it; a native fetch fails TLS.
+// Only the signaling POST goes through Rust. The actual media (ICE/DTLS/SRTP
+// over UDP) is a browser primitive and isn't subject to mixed-content rules,
+// so the RTCPeerConnection still runs entirely in the WebView as before.
+//
+// In a plain browser dev session `tauriFetch` falls back to the global fetch.
+
+import { tauriFetch } from "@/lib/tauri-fetch";
 
 export interface WhepSession {
   pc: RTCPeerConnection;
@@ -63,7 +73,7 @@ export async function connectWhep(
 
   let resp: Response;
   try {
-    resp = await fetch(url, {
+    resp = await tauriFetch(url, {
       method:  "POST",
       headers: {
         "Content-Type": "application/sdp",

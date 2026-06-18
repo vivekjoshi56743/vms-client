@@ -52,6 +52,90 @@ fn err_resp(status: u16, msg: String) -> tauri::http::Response<Vec<u8>> {
         .unwrap()
 }
 
+/// Fetch a fully-muxed playback window and return its raw bytes over the IPC.
+///
+/// This is the playback path used by the UI. We deliberately do NOT serve video
+/// through the custom `proxy://` URI scheme for `<video>` playback: WebView2
+/// (Windows) and WebKitGTK (Linux) handle custom-scheme media + Range requests
+/// very differently from WKWebView, which produced `MEDIA_ELEMENT_ERROR:
+/// Format error`. Instead the UI fetches each window through this command (the
+/// same IPC the rest of the app already uses everywhere) and plays it from an
+/// in-memory blob: URL — a plain MP4 the native media pipeline handles on every
+/// platform, with no custom scheme, Range, or streaming involved.
+///
+/// macOS keeps the cheaper HEVC passthrough (+ hev1→hvc1 retag); other targets
+/// request H.264 (`vcodec=h264`) since they have no HEVC decoder. Windows are
+/// cached (LRU) so re-seeks to the same window don't re-mux.
+#[tauri::command]
+async fn playback_window(
+    app: tauri::AppHandle,
+    host: String,
+    token: String,
+    path: String,
+    start: String,
+    duration: String,
+) -> Result<tauri::ipc::Response, String> {
+    let host = host.trim_end_matches('/');
+    let key = format!("{path}|{start}|{duration}");
+
+    if let Some(c) = app.state::<PlaybackCache>().get(&key) {
+        return Ok(tauri::ipc::Response::new(c.as_ref().clone()));
+    }
+
+    let url = {
+        let mut ser = url::form_urlencoded::Serializer::new(String::new());
+        ser.append_pair("format", "fmp4")
+            .append_pair("duration", &duration)
+            .append_pair("path", &path)
+            .append_pair("start", &start);
+        if !cfg!(target_os = "macos") {
+            ser.append_pair("vcodec", "h264");
+        }
+        format!("{host}/api/_playback/get?{}", ser.finish())
+    };
+
+    let t0 = std::time::Instant::now();
+    eprintln!("[playback] MISS path={path} start={start} dur={duration}");
+
+    let resp = app
+        .state::<tofu::TofuState>()
+        .http
+        .get(&url)
+        .header("Authorization", format!("Bearer {token}"))
+        .send()
+        .await
+        .map_err(|e| format!("request failed: {e}"))?;
+
+    if !resp.status().is_success() {
+        let st = resp.status().as_u16();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("playback {st}: {}", &body[..body.len().min(200)]));
+    }
+
+    let mut v = resp
+        .bytes()
+        .await
+        .map_err(|e| format!("read failed: {e}"))?
+        .to_vec();
+
+    // macOS only: WKWebView requires the 'hvc1' HEVC sample-entry tag.
+    if cfg!(target_os = "macos") {
+        let scan = v.len().min(0x10000);
+        let mut i = 0;
+        while i + 4 <= scan {
+            if &v[i..i + 4] == b"hev1" {
+                v[i..i + 4].copy_from_slice(b"hvc1");
+            }
+            i += 1;
+        }
+    }
+
+    eprintln!("[playback]   muxed bytes={} elapsed={:?}", v.len(), t0.elapsed());
+    let arc = Arc::new(v);
+    app.state::<PlaybackCache>().put(key, arc.clone());
+    Ok(tauri::ipc::Response::new(arc.as_ref().clone()))
+}
+
 /// Max bytes pulled from the backend (and held in memory) per proxy request.
 /// WebKit re-requests the next window as it plays/seeks, so a moderate chunk
 /// keeps first-frame and scrub latency low without buffering a whole 400 MB
@@ -374,6 +458,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            playback_window,
             tofu::tofu_peek_cert,
             tofu::tofu_trust_cert,
             tofu::tofu_untrust_cert,

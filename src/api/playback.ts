@@ -1,3 +1,5 @@
+import { invoke } from "@tauri-apps/api/core";
+
 import { client, unwrap } from "@/api/client";
 import type { components } from "@/api/schema";
 
@@ -59,29 +61,34 @@ export async function fetchPlaybackDataUrl(
   return `proxy://localhost/${segmentId}?${params.toString()}`;
 }
 
-// Build a proxy URL for a *playback window*: a fresh fMP4 the backend muxes
-// starting at `startISO` for `durationSecs`, via /api/_playback/get. This is
-// how playback "seeks" — the stored recordings are 1-hour fragmented MP4s with
-// no seek index, so we can't byte-seek into them. Instead we ask for a stream
-// that begins exactly at the time we want and play it from t=0. To move to a
-// new time, request a new window. The Rust `proxy` handler (path == "playback")
-// forwards this to the backend, retags HEVC, and returns the buffered stream.
-export function buildPlaybackWindowUrl(
+// Fetch a *playback window* and return an in-memory blob: URL to feed a
+// <video> element. A window is a fresh fMP4 the backend muxes starting at
+// `startISO` for `durationSecs` (/api/_playback/get). This is how playback
+// "seeks" — the stored recordings are fragmented MP4s with no seek index, so we
+// can't byte-seek into them; instead we request a stream that begins exactly at
+// the time we want and play it from t=0, requesting a new window to move.
+//
+// Crucially we fetch via the `playback_window` Tauri command (the same IPC the
+// rest of the app uses), NOT the custom proxy:// scheme — WebView2 (Windows)
+// and WebKitGTK (Linux) mishandle custom-scheme media/Range requests and throw
+// MEDIA_ELEMENT_ERROR: Format error. A blob: URL is a plain MP4 the native
+// media pipeline plays on every platform. Caller must URL.revokeObjectURL().
+export async function fetchPlaybackWindow(
   cameraId: string,
   startISO: string,
   durationSecs: number
-): string {
+): Promise<string> {
   const { token, serverUrl } = useAuthStore.getState();
   if (!token) throw new Error("Not authenticated");
   if (!serverUrl) throw new Error("No active server");
 
-  const params = new URLSearchParams({
-    token,
+  const bytes = await invoke<ArrayBuffer>("playback_window", {
     host: serverUrl,
+    token,
     path: `cam-${cameraId}`,
     start: startISO,
     duration: `${Math.max(1, Math.round(durationSecs))}s`,
   });
-  return `proxy://localhost/playback?${params.toString()}`;
+  return URL.createObjectURL(new Blob([bytes], { type: "video/mp4" }));
 }
 
