@@ -7,8 +7,8 @@
 // the Rust fetch (no mixed-content / self-signed-TLS issues) and only let the
 // player mount once we get a real "#EXTM3U" body. The wait is unavoidable
 // (ffmpeg has to produce the first segments), but this turns it into the
-// normal "Connecting…" spinner instead of an error — mirroring the WHEP warmup
-// retry budget (~12s).
+// normal "Connecting…" spinner instead of an error. Budget ~30s (38 × 800ms)
+// to cover a slow cold transcode start before giving up.
 
 import { tauriFetch } from "@/lib/tauri-fetch";
 
@@ -16,7 +16,7 @@ export async function waitForHlsReady(
   url: string,
   opts: { signal?: AbortSignal; maxAttempts?: number; intervalMs?: number } = {}
 ): Promise<void> {
-  const { signal, maxAttempts = 15, intervalMs = 800 } = opts;
+  const { signal, maxAttempts = 38, intervalMs = 800 } = opts;
   let lastErr = "not ready";
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {

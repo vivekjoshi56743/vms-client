@@ -34,7 +34,14 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y \
             libwebkit2gtk-4.1-dev libssl-dev \
-            libayatana-appindicator3-dev librsvg2-dev libsecret-1-dev
+            libayatana-appindicator3-dev librsvg2-dev libsecret-1-dev \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav
+          # These GStreamer plugins must be present at build time so the
+          # AppImage's bundleMediaFramework step can bundle them. They give the
+          # bundled WebKitGTK its media pipeline (MSE, WebRTC via webrtcbin, and
+          # H.264/HEVC software decode via libav) on host distros — e.g. Arch —
+          # that ship a stripped WebKitGTK without these.
 
       - name: Set up Node
         uses: actions/setup-node@v4
