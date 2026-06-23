@@ -1,6 +1,6 @@
 # Video Streaming Architecture — How Live & Playback Work Now
 
-> **Current as of commit:** `PENDING` — bump this (and this doc) in the same
+> **Current as of commit:** `f335756` — bump this (and this doc) in the same
 > commit whenever the video codec/transcode/routing behavior changes (CLAUDE.md
 > Rule 9).
 >
