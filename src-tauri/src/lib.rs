@@ -63,9 +63,13 @@ fn err_resp(status: u16, msg: String) -> tauri::http::Response<Vec<u8>> {
 /// in-memory blob: URL — a plain MP4 the native media pipeline handles on every
 /// platform, with no custom scheme, Range, or streaming involved.
 ///
-/// macOS keeps the cheaper HEVC passthrough (+ hev1→hvc1 retag); other targets
-/// request H.264 (`vcodec=h264`) since they have no HEVC decoder. Windows are
-/// cached (LRU) so re-seeks to the same window don't re-mux.
+/// Codec is CLIENT-DRIVEN, not guessed from the OS: the frontend requests native
+/// HEVC (cheap passthrough) and only passes `vcodec = Some("h264")` after it has
+/// *observed* that this WebView can't actually render HEVC (verifyVideoRenders).
+/// This avoids needless server transcodes (and the concurrent-transcode cap) on
+/// any device that can decode HEVC — Linux with GStreamer, HEVC-capable Windows,
+/// macOS. When serving HEVC we retag hev1→hvc1 (WKWebView, and some WebKitGTK,
+/// require it). Windows are cached (LRU) so re-seeks don't re-mux.
 #[tauri::command]
 async fn playback_window(
     app: tauri::AppHandle,
@@ -74,9 +78,12 @@ async fn playback_window(
     path: String,
     start: String,
     duration: String,
+    vcodec: Option<String>,
 ) -> Result<tauri::ipc::Response, String> {
     let host = host.trim_end_matches('/');
-    let key = format!("{path}|{start}|{duration}");
+    let want_h264 = vcodec.as_deref() == Some("h264");
+    // Codec is part of the cache key so HEVC and H.264 windows never collide.
+    let key = format!("{path}|{start}|{duration}|{}", if want_h264 { "h264" } else { "hevc" });
 
     if let Some(c) = app.state::<PlaybackCache>().get(&key) {
         return Ok(tauri::ipc::Response::new(c.as_ref().clone()));
@@ -88,7 +95,7 @@ async fn playback_window(
             .append_pair("duration", &duration)
             .append_pair("path", &path)
             .append_pair("start", &start);
-        if !cfg!(target_os = "macos") {
+        if want_h264 {
             ser.append_pair("vcodec", "h264");
         }
         format!("{host}/api/_playback/get?{}", ser.finish())
@@ -118,8 +125,10 @@ async fn playback_window(
         .map_err(|e| format!("read failed: {e}"))?
         .to_vec();
 
-    // macOS only: WKWebView requires the 'hvc1' HEVC sample-entry tag.
-    if cfg!(target_os = "macos") {
+    // Serving native HEVC: WKWebView (and some WebKitGTK) require the 'hvc1'
+    // sample-entry tag, not 'hev1'. Retag in the moov. (No-op for the H.264
+    // path, which has no hev1 box, so it's gated on the HEVC case for clarity.)
+    if !want_h264 {
         let scan = v.len().min(0x10000);
         let mut i = 0;
         while i + 4 <= scan {

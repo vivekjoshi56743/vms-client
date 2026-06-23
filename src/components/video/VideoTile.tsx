@@ -3,6 +3,7 @@ import { Maximize2 } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { VideoPlayer, type PlayerState } from "@/components/video/VideoPlayer";
+import { useLiveCodecStore } from "@/stores/liveCodec";
 import type { Camera } from "@/api/cameras";
 import type { CameraHealth } from "@/api/health";
 
@@ -71,6 +72,21 @@ export function VideoTile({ camera, url, hlsFallback, health, onStateChange, cla
   const [playerState, setPlayerState] = useState<PlayerState>("idle");
   const isPlaying = playerState === "playing";
 
+  // Per-camera live codec decision (observed, not probed). While we haven't
+  // confirmed the native stream renders here, ask the player to verify it; on a
+  // black result switch this camera to the backend's H.264 (useStreams refetches
+  // the H.264 URLs because the verdict is part of its query key).
+  const verdict = useLiveCodecStore((s) => s.verdicts[camera.id]);
+  const whepUnsupported = useLiveCodecStore((s) => !!s.whepUnsupported[camera.id]);
+  const markNativeOk = useLiveCodecStore((s) => s.markNativeOk);
+  const markNeedsH264 = useLiveCodecStore((s) => s.markNeedsH264);
+  const markWhepUnsupported = useLiveCodecStore((s) => s.markWhepUnsupported);
+
+  // Only verify while attempting native (untested). Once on H.264 the camera
+  // plays directly. Skip WHEP only while on native and known unsupported.
+  const verifyNative = verdict === undefined;
+  const skipWhep = verdict !== "h264" && whepUnsupported;
+
   function handleStateChange(s: PlayerState) {
     setPlayerState(s);
     onStateChange?.(s);
@@ -94,6 +110,13 @@ export function VideoTile({ camera, url, hlsFallback, health, onStateChange, cla
         className="h-full w-full"
         onStateChange={handleStateChange}
         muted
+        skipWhep={skipWhep}
+        onWhepUnsupported={() => markWhepUnsupported(camera.id)}
+        onRenderVerified={
+          verifyNative
+            ? (ok) => (ok ? markNativeOk(camera.id) : markNeedsH264(camera.id))
+            : undefined
+        }
       />
 
       {/* Chrome — shown while playing */}

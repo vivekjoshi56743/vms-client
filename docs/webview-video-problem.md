@@ -3,6 +3,11 @@
 > Self-contained handoff document. Assumes no prior context. Goal: get another
 > engineer/AI fully up to speed on why live (and now playback) video fails on
 > Linux, and what the design options are.
+>
+> **Status:** this is the *problem/analysis* record. For how it's actually built
+> now (native-first, observe-and-verify per camera, the `hev1→hvc1` retag, the
+> Linux GStreamer bundle), see
+> [video-streaming-architecture.md](./video-streaming-architecture.md).
 
 ## 1. What the system is
 

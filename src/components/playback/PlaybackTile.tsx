@@ -5,6 +5,8 @@ import { cn } from "@/lib/cn";
 import { useRecordings } from "@/hooks/usePlayback";
 import { usePlaybackStore } from "@/stores/playback";
 import { fetchPlaybackWindow, type RecordingSegment } from "@/api/playback";
+import { usePlaybackCodecStore, playbackVcodecFor } from "@/stores/playbackCodec";
+import { verifyVideoRenders } from "@/lib/verify-video";
 
 interface Props {
   cameraId: string;
@@ -54,6 +56,14 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
   const setPlaying = usePlaybackStore((s) => s.setPlaying);
 
   const isPrimary = primaryCameraId === cameraId;
+
+  // Which codec to request FOR THIS CAMERA: its native stream until we've
+  // observed that native can't render here, then H.264 (see verification effect
+  // below). Decided per camera, so a natively-H.264 camera never transcodes.
+  const verdict = usePlaybackCodecStore((s) => s.verdicts[cameraId]);
+  const markNativeOk = usePlaybackCodecStore((s) => s.markNativeOk);
+  const markNeedsH264 = usePlaybackCodecStore((s) => s.markNeedsH264);
+  const playbackVcodec = playbackVcodecFor(verdict);
 
   const recordings = useRecordings(
     cameraId,
@@ -163,7 +173,12 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
       }
       if (inflight.current.has(startMs)) return;
       inflight.current.add(startMs);
-      fetchPlaybackWindow(cameraId, new Date(startMs).toISOString(), durS)
+      fetchPlaybackWindow(
+        cameraId,
+        new Date(startMs).toISOString(),
+        durS,
+        playbackVcodec ? { vcodec: playbackVcodec } : undefined
+      )
         .then((url) => {
           blobs.current.set(startMs, url);
           // Evict oldest blobs not currently held by a slot.
@@ -183,7 +198,7 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
         .catch((e) => setErrorMsg(e?.message ? String(e.message) : String(e)))
         .finally(() => inflight.current.delete(startMs));
     },
-    [cameraId, applyUrl]
+    [cameraId, applyUrl, playbackVcodec]
   );
 
   // Track current slot window starts (for eviction) + revoke all on unmount.
@@ -254,6 +269,42 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
     setLoading(!!activeWin && (!activeWin.url || !el || el.readyState < 3));
   }, [active, activeWin, videoRefs]);
 
+  // Verify ONCE (per camera) that this camera's native stream actually paints on
+  // this device. We don't trust canPlayType — we watch for a real decoded frame
+  // (verifyVideoRenders). If none ever appears (black screen, even with no error
+  // event), record it so this camera switches to backend H.264. Runs per tile on
+  // its own active video, so each camera is judged independently.
+  const probedRef = useRef(false);
+  const probeCtrl = useRef<AbortController | null>(null);
+  useEffect(() => {
+    if (probedRef.current || verdict !== undefined) return;
+    const el = videoRefs[active].current;
+    if (!el || !slots[active]?.url) return; // need a loaded native window to test
+    probedRef.current = true;
+    const ctrl = new AbortController();
+    probeCtrl.current = ctrl;
+    verifyVideoRenders(el, { signal: ctrl.signal }).then((ok) => {
+      if (ctrl.signal.aborted) return;
+      if (ok) markNativeOk(cameraId);
+      else markNeedsH264(cameraId);
+    });
+  }, [verdict, active, slots, videoRefs, cameraId, markNativeOk, markNeedsH264]);
+  useEffect(() => () => probeCtrl.current?.abort(), []);
+
+  // When the codec preference flips (native found unrenderable -> H.264), the
+  // cached blobs are the wrong codec: drop them and reload every slot.
+  const prevVcodec = useRef(playbackVcodec);
+  useEffect(() => {
+    if (prevVcodec.current === playbackVcodec) return;
+    prevVcodec.current = playbackVcodec;
+    for (const url of blobs.current.values()) URL.revokeObjectURL(url);
+    blobs.current.clear();
+    inflight.current.clear();
+    setSlots(
+      (prev) => prev.map((s) => (s ? { ...s, url: null } : s)) as [Win | null, Win | null]
+    );
+  }, [playbackVcodec]);
+
   // ── Per-video event handlers ─────────────────────────────────────────────
   const onCanPlay = (i: 0 | 1) => {
     if (i !== active) return;
@@ -291,6 +342,10 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
   const onError = (i: 0 | 1) => {
     if (i !== active) return;
     setLoading(false);
+    // While still probing this camera's native stream, an error just means this
+    // device can't decode it — the verification flips us to H.264 and reloads.
+    // Don't surface an error for that expected fallback.
+    if (verdict === undefined) return;
     setErrorMsg(videoRefs[i].current?.error?.message || "Playback failed");
   };
 

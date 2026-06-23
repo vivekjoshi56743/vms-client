@@ -1,21 +1,21 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { ensureStream, selectLiveUrls } from "@/api/streams";
 import type { StreamURLs } from "@/api/streams";
-import { needsH264Stream } from "@/lib/codec";
+import { useLiveCodecStore, liveVcodecFor } from "@/stores/liveCodec";
 
-// Whether this client must ask the backend to transcode to H.264 (WebViews
-// without an HEVC decoder, e.g. Linux WebKitGTK). Stable for the session, so
-// we read it once and fold it into the query key + request.
-const VCODEC = needsH264Stream() ? ("h264" as const) : undefined;
-
-// Shared query key + fetch so every entry point (useStream, useStreams, and
-// LivePage's prefetch) hits the SAME cache entry and requests the SAME codec.
-// VCODEC is part of the key so native and H.264 results never collide.
-export function streamQueryKey(cameraId: string) {
-  return ["stream", cameraId, VCODEC ?? "native"] as const;
+// Codec is PER CAMERA and decided by OBSERVED playback (see VideoTile + the
+// liveCodec store), not a capability probe. Default is the camera's native
+// stream (no transcode); we request H.264 only for cameras whose native stream
+// this device couldn't actually render. The vcodec is part of the query key so
+// flipping a camera to H.264 transparently refetches its (transcoded) URLs.
+export function streamQueryKey(cameraId: string, vcodec: "h264" | undefined) {
+  return ["stream", cameraId, vcodec ?? "native"] as const;
 }
-export function fetchStream(cameraId: string): Promise<StreamURLs> {
-  return ensureStream(cameraId, VCODEC ? { vcodec: VCODEC } : undefined);
+export function fetchStream(
+  cameraId: string,
+  vcodec: "h264" | undefined
+): Promise<StreamURLs> {
+  return ensureStream(cameraId, vcodec ? { vcodec } : undefined);
 }
 
 // Fires POST /api/cameras/{id}/stream once per camera selection; result is
@@ -23,9 +23,11 @@ export function fetchStream(cameraId: string): Promise<StreamURLs> {
 // camera is active). Set staleTime to Infinity so switching back to a
 // previously-viewed camera is instant with no re-POST.
 export function useStream(cameraId: string | null) {
+  const verdict = useLiveCodecStore((s) => (cameraId ? s.verdicts[cameraId] : undefined));
+  const vcodec = liveVcodecFor(verdict);
   return useQuery({
-    queryKey: streamQueryKey(cameraId ?? ""),
-    queryFn:  () => fetchStream(cameraId!),
+    queryKey: streamQueryKey(cameraId ?? "", vcodec),
+    queryFn:  () => fetchStream(cameraId!, vcodec),
     enabled:  !!cameraId,
     staleTime: Infinity,
     retry: 1,
@@ -33,16 +35,20 @@ export function useStream(cameraId: string | null) {
 }
 
 // Fires POST for every camera ID in the list in parallel.
-// Returns a map of cameraId → live URLs (only resolved entries), already
-// resolved to the H.264 variant when this client requested it.
+// Returns a map of cameraId → live URLs (only resolved entries), each resolved
+// to that camera's native or H.264 variant per its observed verdict.
 export function useStreams(cameraIds: string[]) {
+  const verdicts = useLiveCodecStore((s) => s.verdicts);
   const results = useQueries({
-    queries: cameraIds.map((id) => ({
-      queryKey: streamQueryKey(id),
-      queryFn:  () => fetchStream(id),
-      staleTime: Infinity,
-      retry: 1,
-    })),
+    queries: cameraIds.map((id) => {
+      const vcodec = liveVcodecFor(verdicts[id]);
+      return {
+        queryKey: streamQueryKey(id, vcodec),
+        queryFn:  () => fetchStream(id, vcodec),
+        staleTime: Infinity,
+        retry: 1,
+      };
+    }),
   });
 
   const map: Record<string, { webrtc: string | null; hls: string | null }> = {};

@@ -10,6 +10,7 @@ import { ConnectingSplash } from "@/components/video/ConnectingSplash";
 import type { PlayerState } from "@/components/video/VideoPlayer";
 import { useCameras, useAllCameraHealth } from "@/hooks/useCameras";
 import { useStreams, streamQueryKey, fetchStream } from "@/hooks/useStream";
+import { useLiveCodecStore, liveVcodecFor } from "@/stores/liveCodec";
 import { useLayoutsStore, type GridSize, type Layout } from "@/stores/layouts";
 import { useUIStore } from "@/stores/ui";
 import { openSurveillanceWindow } from "@/lib/surveillance-window";
@@ -70,10 +71,12 @@ export function LivePage() {
     if (prefetchedRef.current) return;
     if (!cameras.data || cameras.data.length === 0) return;
     prefetchedRef.current = true;
+    const verdicts = useLiveCodecStore.getState().verdicts;
     for (const cam of cameras.data) {
+      const vcodec = liveVcodecFor(verdicts[cam.id]);
       void queryClient.prefetchQuery({
-        queryKey: streamQueryKey(cam.id),
-        queryFn:  () => fetchStream(cam.id),
+        queryKey: streamQueryKey(cam.id, vcodec),
+        queryFn:  () => fetchStream(cam.id, vcodec),
         staleTime: Infinity,
       });
     }

@@ -20,8 +20,9 @@ export type StreamURLs = {
 
 // POST /api/cameras/{id}/stream — idempotent in MediaMTX; calling multiple
 // times for the same camera returns the same URLs. Pass { vcodec: "h264" } to
-// additionally request the guaranteed-H.264 variant (see lib/codec.ts for when
-// the client needs it).
+// additionally request the guaranteed-H.264 variant — the live path only does
+// this once it has OBSERVED that a camera's native stream can't render here
+// (see VideoTile + the liveCodec store).
 export async function ensureStream(
   cameraId: string,
   opts?: { vcodec?: "h264" }

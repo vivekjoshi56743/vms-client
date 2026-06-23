@@ -8,6 +8,7 @@ Source documents (all authoritative; live in `docs/`):
 - `docs/plan.md` — the architecture plan; CLAUDE.md is a distillation of its load-bearing parts.
 - `docs/supervision-visual-system.html` — the single source of truth for design tokens, components, themes.
 - `docs/swagger.json` — the backend's OpenAPI spec; `npm run generate-api-types` converts it to `docs/openapi.json` (gitignored) and writes types to `src/api/schema.ts`. Never hand-edit the schema.
+- `docs/video-streaming-architecture.md` — the LIVING source of truth for how live + playback select codecs, transcode, route through Rust, and apply the `hev1→hvc1` retag. Keep it in sync (see Rule 9).
 
 The backend is a Go-based self-hosted VMS, complete through Phase 9 (live streaming, recording, playback, health monitoring). The frontend is a Tauri 2.0 desktop app, starting now.
 
@@ -191,6 +192,11 @@ These rules keep the codebase navigable as it grows. Treat them as load-bearing.
 - Use design-system skeleton patterns (with `shimmer` animation from tokens.css).
 - Errors render via toast (`sonner` from shadcn) for actions, inline for forms.
 - Never show a blank screen during loading.
+
+### Rule 9: The video streaming architecture doc is kept in sync
+- `docs/video-streaming-architecture.md` describes how live + playback choose codecs, when/where we transcode (`vcodec=h264`), the per-camera observe-and-verify decision (`stores/liveCodec.ts`, `stores/playbackCodec.ts`, `lib/verify-video.ts`), WHEP/HLS selection, the Rust routing, and the `hev1→hvc1` retag in `src-tauri/src/lib.rs`.
+- **Whenever you change any of that behavior, update that doc in the SAME commit.** Treat the doc and the code as one change — a video-path change without a doc update is incomplete.
+- Update the **"Current as of commit"** stamp at the top of that doc to the commit that makes the change (the doc is then known-accurate up to that commit).
 
 ---
 

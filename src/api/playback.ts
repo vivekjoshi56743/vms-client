@@ -73,10 +73,15 @@ export async function fetchPlaybackDataUrl(
 // and WebKitGTK (Linux) mishandle custom-scheme media/Range requests and throw
 // MEDIA_ELEMENT_ERROR: Format error. A blob: URL is a plain MP4 the native
 // media pipeline plays on every platform. Caller must URL.revokeObjectURL().
+// `vcodec` controls what the backend muxes: omit it for the camera's native
+// codec (usually HEVC — cheapest, no transcode), or pass "h264" to have the
+// backend transcode. We only ask for H.264 once we've confirmed this device
+// can't actually render HEVC (see verifyVideoRenders / playbackCodec store).
 export async function fetchPlaybackWindow(
   cameraId: string,
   startISO: string,
-  durationSecs: number
+  durationSecs: number,
+  opts?: { vcodec?: "h264" }
 ): Promise<string> {
   const { token, serverUrl } = useAuthStore.getState();
   if (!token) throw new Error("Not authenticated");
@@ -88,6 +93,7 @@ export async function fetchPlaybackWindow(
     path: `cam-${cameraId}`,
     start: startISO,
     duration: `${Math.max(1, Math.round(durationSecs))}s`,
+    vcodec: opts?.vcodec, // undefined => native (HEVC) passthrough
   });
   return URL.createObjectURL(new Blob([bytes], { type: "video/mp4" }));
 }

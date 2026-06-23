@@ -9,7 +9,6 @@ import {
 } from "@/api/discovery";
 import { addCamera, deleteCamera, type CreateCameraInput } from "@/api/cameras";
 import { ensureStream, selectLiveUrls } from "@/api/streams";
-import { needsH264Stream } from "@/lib/codec";
 
 // Cameras created purely to preview a discovered feed are prefixed so they
 // can be filtered out of the Cameras grid and swept up on cleanup. The only
@@ -53,12 +52,10 @@ export function usePreviewCamera() {
   return useMutation<PreviewSession, Error, CreateCameraInput>({
     mutationFn: async (input) => {
       const cam = await addCamera({ ...input, name: tempName(input.name) });
-      const stream = await ensureStream(
-        cam.id,
-        needsH264Stream() ? { vcodec: "h264" } : undefined
-      );
-      // Resolve to the H.264 variant when this WebView needs it (same logic as
-      // the live grid), so the discovery preview plays on every platform too.
+      // Preview the camera's native stream (no transcode). The full
+      // observe-and-fall-back-to-H.264 logic lives in the live grid; a transient
+      // preview just uses native.
+      const stream = await ensureStream(cam.id);
       const { webrtc, hls } = selectLiveUrls(stream);
       return { cameraId: cam.id, webrtc, hls };
     },

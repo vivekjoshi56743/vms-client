@@ -8,6 +8,7 @@ import { connectWhep, type WhepSession } from "@/lib/whep";
 import { isTauri } from "@/lib/fingerprint";
 import { TauriHlsLoader } from "@/lib/hls-tauri-loader";
 import { waitForHlsReady } from "@/lib/hls-ready";
+import { verifyVideoRenders } from "@/lib/verify-video";
 
 export type PlayerState = "idle" | "connecting" | "playing" | "error";
 
@@ -21,6 +22,15 @@ interface Props {
   onStateChange?: (state: PlayerState) => void;
   muted?: boolean;
   controls?: boolean;
+  /** Skip the WHEP attempt and go straight to HLS — set once we know this
+   *  camera's native codec can't traverse WebRTC (e.g. HEVC). */
+  skipWhep?: boolean;
+  /** Fired after we've OBSERVED whether the stream actually rendered a frame.
+   *  Provided only while attempting the native codec; false ⇒ caller should
+   *  request the H.264 variant. */
+  onRenderVerified?: (ok: boolean) => void;
+  /** Fired when WHEP fails because the codec can't go over WebRTC. */
+  onWhepUnsupported?: () => void;
 }
 
 // URL type detection — order matters (WHEP check before generic http).
@@ -54,6 +64,9 @@ export function VideoPlayer({
   onStateChange,
   muted = true,
   controls = false,
+  skipWhep = false,
+  onRenderVerified,
+  onWhepUnsupported,
 }: Props) {
   const [state, setState] = useState<PlayerState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +83,13 @@ export function VideoPlayer({
     [onStateChange]
   );
 
+  // Reset the WHEP→HLS codec fallback whenever the source URL changes — e.g.
+  // when the camera flips from its native stream to the backend's H.264 variant
+  // — so a stale fallback URL doesn't shadow the new one.
+  useEffect(() => {
+    setHlsFallbackUrl(null);
+  }, [url]);
+
   if (!url) {
     return (
       <div className={cn("flex items-center justify-center bg-canvas-deep", className)}>
@@ -85,11 +105,12 @@ export function VideoPlayer({
   let playUrl = activeUrl;
   let unsupportedReason = "Unsupported source";
 
-  // If we'd use WHEP but this WebView has no WebRTC (some Linux WebKitGTK
-  // builds), transparently switch to the camera's HLS stream. `hlsFallback`
-  // is the .m3u8 the backend returns alongside the WHEP URL. If there's no HLS
-  // URL to fall back to, surface a clear message instead of letting WHEP throw.
-  if (kind === "whep" && !webrtcSupported()) {
+  // Use HLS instead of WHEP when either this WebView has no WebRTC (some Linux
+  // WebKitGTK builds) OR we already know this camera's codec can't traverse
+  // WebRTC (`skipWhep`, e.g. HEVC). `hlsFallback` is the .m3u8 the backend
+  // returns alongside the WHEP URL. If there's no HLS URL to fall back to,
+  // surface a clear message instead of letting WHEP throw.
+  if (kind === "whep" && (skipWhep || !webrtcSupported())) {
     if (hlsFallback) {
       playUrl = hlsFallback;
       kind = "hls";
@@ -128,6 +149,8 @@ export function VideoPlayer({
           onPlaying={() => updateState("playing")}
           onConnecting={() => updateState("connecting")}
           onError={handleError}
+          onRenderVerified={onRenderVerified}
+          onWhepUnsupported={onWhepUnsupported}
         />
       )}
       {kind === "hls" && (
@@ -139,6 +162,7 @@ export function VideoPlayer({
           onPlaying={() => updateState("playing")}
           onConnecting={() => updateState("connecting")}
           onError={handleError}
+          onRenderVerified={onRenderVerified}
         />
       )}
       {kind === "unsupported" && (
@@ -201,6 +225,8 @@ function WhepPlayer({
   onPlaying,
   onConnecting,
   onError,
+  onRenderVerified,
+  onWhepUnsupported,
 }: {
   url: string;
   hlsFallback?: string;
@@ -208,6 +234,8 @@ function WhepPlayer({
   onPlaying: () => void;
   onConnecting: () => void;
   onError: (msg: string, opts?: { whepUnsupportedCodec?: boolean; hlsFallback?: string }) => void;
+  onRenderVerified?: (ok: boolean) => void;
+  onWhepUnsupported?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sessionRef = useRef<WhepSession | null>(null);
@@ -227,6 +255,7 @@ function WhepPlayer({
     onConnecting();
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let verifyCtrl: AbortController | null = null;
 
     const handleConnectError = (err: Error) => {
       if (cancelled) return;
@@ -242,20 +271,34 @@ function WhepPlayer({
         }, NOT_READY_BACKOFF_MS);
         return;
       }
-      if (e.whepUnsupportedCodec && hlsFallback) {
-        onError(err.message, { whepUnsupportedCodec: true, hlsFallback });
-      } else {
-        onError(err.message);
+      if (e.whepUnsupportedCodec) {
+        // Remember so we skip the doomed WHEP attempt next time (HEVC can't go
+        // over WebRTC), and fall straight to HLS for this playthrough.
+        onWhepUnsupported?.();
+        if (hlsFallback) {
+          onError(err.message, { whepUnsupportedCodec: true, hlsFallback });
+          return;
+        }
       }
+      onError(err.message);
     };
 
     connectWhep(
       url,
       (stream) => {
         if (cancelled) return;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {/* autoplay blocked */});
+        const el = videoRef.current;
+        if (el) {
+          el.srcObject = stream;
+          el.play().catch(() => {/* autoplay blocked */});
+          // WHEP carried the camera's codec → confirm it actually paints.
+          if (onRenderVerified) {
+            verifyCtrl = new AbortController();
+            const ctrl = verifyCtrl;
+            verifyVideoRenders(el, { signal: ctrl.signal }).then((ok) => {
+              if (!ctrl.signal.aborted) onRenderVerified(ok);
+            });
+          }
         }
         onPlaying();
       },
@@ -273,6 +316,7 @@ function WhepPlayer({
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
+      verifyCtrl?.abort();
       sessionRef.current?.close();
       sessionRef.current = null;
     };
@@ -298,6 +342,7 @@ function HlsPlayer({
   onPlaying,
   onConnecting,
   onError,
+  onRenderVerified,
 }: {
   url: string;
   muted: boolean;
@@ -305,6 +350,7 @@ function HlsPlayer({
   onPlaying: () => void;
   onConnecting: () => void;
   onError: (msg: string) => void;
+  onRenderVerified?: (ok: boolean) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -325,6 +371,7 @@ function HlsPlayer({
 
     let cancelled = false;
     const controller = new AbortController();
+    let verifyCtrl: AbortController | null = null;
     let hls: Hls | null = null;
 
     const start = () => {
@@ -355,6 +402,17 @@ function HlsPlayer({
         }
       });
       el.addEventListener("playing", onPlaying, { once: true });
+      // Confirm the native HLS stream actually paints (caller passes
+      // onRenderVerified only while attempting the native codec). The readiness
+      // probe already ensured the manifest is serving, so a black result here
+      // means the WebView can't decode this codec -> caller falls back to H.264.
+      if (onRenderVerified) {
+        verifyCtrl = new AbortController();
+        const ctrl = verifyCtrl;
+        verifyVideoRenders(el, { signal: ctrl.signal }).then((ok) => {
+          if (!ctrl.signal.aborted) onRenderVerified(ok);
+        });
+      }
     };
 
     // Probe the manifest first (Tauri only) so we mount hls.js on a stream
@@ -376,6 +434,7 @@ function HlsPlayer({
     return () => {
       cancelled = true;
       controller.abort();
+      verifyCtrl?.abort();
       hls?.destroy();
       el.removeEventListener("playing", onPlaying);
     };
