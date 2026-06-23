@@ -9,6 +9,7 @@ import { isTauri } from "@/lib/fingerprint";
 import { TauriHlsLoader } from "@/lib/hls-tauri-loader";
 import { waitForHlsReady } from "@/lib/hls-ready";
 import { verifyVideoRenders } from "@/lib/verify-video";
+import { codecLabel } from "@/lib/codec-label";
 
 export type PlayerState = "idle" | "connecting" | "playing" | "error";
 
@@ -31,6 +32,8 @@ interface Props {
   onRenderVerified?: (ok: boolean) => void;
   /** Fired when WHEP fails because the codec can't go over WebRTC. */
   onWhepUnsupported?: () => void;
+  /** Reports the codec actually being played (e.g. "H.264", "H.265"). */
+  onCodec?: (label: string | null) => void;
 }
 
 // URL type detection — order matters (WHEP check before generic http).
@@ -67,6 +70,7 @@ export function VideoPlayer({
   skipWhep = false,
   onRenderVerified,
   onWhepUnsupported,
+  onCodec,
 }: Props) {
   const [state, setState] = useState<PlayerState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -151,6 +155,7 @@ export function VideoPlayer({
           onError={handleError}
           onRenderVerified={onRenderVerified}
           onWhepUnsupported={onWhepUnsupported}
+          onCodec={onCodec}
         />
       )}
       {kind === "hls" && (
@@ -163,6 +168,7 @@ export function VideoPlayer({
           onConnecting={() => updateState("connecting")}
           onError={handleError}
           onRenderVerified={onRenderVerified}
+          onCodec={onCodec}
         />
       )}
       {kind === "unsupported" && (
@@ -227,6 +233,7 @@ function WhepPlayer({
   onError,
   onRenderVerified,
   onWhepUnsupported,
+  onCodec,
 }: {
   url: string;
   hlsFallback?: string;
@@ -236,6 +243,7 @@ function WhepPlayer({
   onError: (msg: string, opts?: { whepUnsupportedCodec?: boolean; hlsFallback?: string }) => void;
   onRenderVerified?: (ok: boolean) => void;
   onWhepUnsupported?: () => void;
+  onCodec?: (label: string | null) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sessionRef = useRef<WhepSession | null>(null);
@@ -291,6 +299,9 @@ function WhepPlayer({
         if (el) {
           el.srcObject = stream;
           el.play().catch(() => {/* autoplay blocked */});
+          // WebRTC can't carry HEVC in this deployment, so a live WHEP stream is
+          // always H.264 (HEVC cameras fail WHEP and fall to HLS).
+          onCodec?.("H.264");
           // WHEP carried the camera's codec → confirm it actually paints.
           if (onRenderVerified) {
             verifyCtrl = new AbortController();
@@ -343,6 +354,7 @@ function HlsPlayer({
   onConnecting,
   onError,
   onRenderVerified,
+  onCodec,
 }: {
   url: string;
   muted: boolean;
@@ -351,6 +363,7 @@ function HlsPlayer({
   onConnecting: () => void;
   onError: (msg: string) => void;
   onRenderVerified?: (ok: boolean) => void;
+  onCodec?: (label: string | null) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -392,7 +405,9 @@ function HlsPlayer({
       });
       hls.loadSource(url);
       hls.attachMedia(el);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      hls.on(Hls.Events.MANIFEST_PARSED, (_e, data) => {
+        // The manifest declares the real codec (e.g. hvc1.1.6.L63.0 / avc1.*).
+        onCodec?.(codecLabel(data.levels?.[0]?.videoCodec));
         el.play().catch(() => {});
       });
       hls.on(Hls.Events.ERROR, (_e, data) => {

@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { client, unwrap } from "@/api/client";
 import type { components } from "@/api/schema";
+import { mp4VideoCodecLabel } from "@/lib/codec-label";
 
 import { useAuthStore } from "@/stores/auth";
 
@@ -82,7 +83,7 @@ export async function fetchPlaybackWindow(
   startISO: string,
   durationSecs: number,
   opts?: { vcodec?: "h264" }
-): Promise<string> {
+): Promise<{ url: string; codec: string | null }> {
   const { token, serverUrl } = useAuthStore.getState();
   if (!token) throw new Error("Not authenticated");
   if (!serverUrl) throw new Error("No active server");
@@ -95,6 +96,10 @@ export async function fetchPlaybackWindow(
     duration: `${Math.max(1, Math.round(durationSecs))}s`,
     vcodec: opts?.vcodec, // undefined => native (HEVC) passthrough
   });
-  return URL.createObjectURL(new Blob([bytes], { type: "video/mp4" }));
+  // Read the actual codec from the muxed MP4 so the tile can show what's really
+  // playing (native HEVC vs the H.264 transcode).
+  const codec = mp4VideoCodecLabel(bytes);
+  const url = URL.createObjectURL(new Blob([bytes], { type: "video/mp4" }));
+  return { url, codec };
 }
 

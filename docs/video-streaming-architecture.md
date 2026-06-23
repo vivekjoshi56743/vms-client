@@ -179,6 +179,12 @@ On a capable machine (macOS, Linux+GStreamer, HEVC-Windows) **both live and
 playback use the camera's native codec with zero transcoding.** The backend only
 transcodes the specific streams a given device genuinely can't render.
 
+**Codec badge:** each tile shows the codec actually being played next to the
+camera name (`{name} / H.265`). Source per path: live-HLS reads it from the
+manifest (`level.videoCodec`), live-WHEP is always `H.264` (WebRTC can't carry
+HEVC here), playback scans the muxed MP4's sample-entry fourcc
+(`lib/codec-label.ts`).
+
 ---
 
 ## 9. Where it lives in code
@@ -186,6 +192,7 @@ transcodes the specific streams a given device genuinely can't render.
 | Concern | File |
 |---|---|
 | Render verification (the trust signal) | `src/lib/verify-video.ts` |
+| Codec → display label (badge) | `src/lib/codec-label.ts` |
 | Live per-camera verdict + WHEP-unsupported memory | `src/stores/liveCodec.ts` |
 | Playback per-camera verdict | `src/stores/playbackCodec.ts` |
 | Live stream request (per-camera vcodec) | `src/hooks/useStream.ts` |

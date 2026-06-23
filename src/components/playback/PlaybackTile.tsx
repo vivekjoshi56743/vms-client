@@ -113,6 +113,9 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
   const [active, setActive] = useState<0 | 1>(0);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Codec actually being played, read from the muxed MP4 (native HEVC vs the
+  // H.264 transcode). Shown in the tile header. Uniform per camera.
+  const [codec, setCodec] = useState<string | null>(null);
 
   const v0 = useRef<HTMLVideoElement>(null);
   const v1 = useRef<HTMLVideoElement>(null);
@@ -179,7 +182,8 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
         durS,
         playbackVcodec ? { vcodec: playbackVcodec } : undefined
       )
-        .then((url) => {
+        .then(({ url, codec }) => {
+          if (codec) setCodec(codec);
           blobs.current.set(startMs, url);
           // Evict oldest blobs not currently held by a slot.
           if (blobs.current.size > BLOB_CACHE_MAX) {
@@ -362,6 +366,7 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
       <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-b from-black/70 to-transparent px-3 py-2">
         <span className="truncate font-mono text-[10.5px] font-semibold uppercase tracking-[0.08em] text-white">
           {cameraName}
+          {codec && <span className="ml-1 font-medium text-white/55">/ {codec}</span>}
         </span>
         <span
           className={cn(

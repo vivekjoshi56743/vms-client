@@ -87,12 +87,19 @@ export function VideoTile({ camera, url, hlsFallback, health, onStateChange, cla
   const verifyNative = verdict === undefined;
   const skipWhep = verdict !== "h264" && whepUnsupported;
 
+  // The codec actually being played, reported by the player (HLS reads it from
+  // the manifest; WHEP is always H.264 here). Shown in the tile chrome.
+  const [codec, setCodec] = useState<string | null>(null);
+
   function handleStateChange(s: PlayerState) {
     setPlayerState(s);
     onStateChange?.(s);
   }
   const isCritical = health?.status === "offline" || health?.status === "degraded";
   const tag = locationTag(camera.name);
+  // Hide the location badge when it would just repeat the camera name (numeric
+  // cameras like "102" fall back to the name itself → "102 / H.265 [102]").
+  const showTag = tag !== camera.name.trim().toUpperCase();
   const clock = useClock();
 
   return (
@@ -111,6 +118,7 @@ export function VideoTile({ camera, url, hlsFallback, health, onStateChange, cla
         onStateChange={handleStateChange}
         muted
         skipWhep={skipWhep}
+        onCodec={setCodec}
         onWhepUnsupported={() => markWhepUnsupported(camera.id)}
         onRenderVerified={
           verifyNative
@@ -149,12 +157,19 @@ export function VideoTile({ camera, url, hlsFallback, health, onStateChange, cla
             <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.02em] text-video-chrome-text">
               {camera.name}
             </span>
-            <span
-              className="rounded-[2px] px-1.5 font-mono text-[9px] font-semibold uppercase"
-              style={locationBadgeStyle(tag)}
-            >
-              {tag}
-            </span>
+            {codec && (
+              <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.02em] text-video-chrome-text-muted">
+                / {codec}
+              </span>
+            )}
+            {showTag && (
+              <span
+                className="rounded-[2px] px-1.5 font-mono text-[9px] font-semibold uppercase"
+                style={locationBadgeStyle(tag)}
+              >
+                {tag}
+              </span>
+            )}
           </div>
 
           {/* Top-right: timestamp */}
