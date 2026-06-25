@@ -278,10 +278,16 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
   // (verifyVideoRenders). If none ever appears (black screen, even with no error
   // event), record it so this camera switches to backend H.264. Runs per tile on
   // its own active video, so each camera is judged independently.
+  //
+  // Gated on `isPlaying`: playback opens PAUSED (and every seek pauses), and a
+  // paused <video> never produces a frame — probing it would always time out
+  // and wrongly demand an H.264 transcode for a codec we never actually tested.
+  // We only judge a stream the user is actually playing.
   const probedRef = useRef(false);
   const probeCtrl = useRef<AbortController | null>(null);
   useEffect(() => {
     if (probedRef.current || verdict !== undefined) return;
+    if (!isPlaying) return; // only judge a stream that's actually playing
     const el = videoRefs[active].current;
     if (!el || !slots[active]?.url) return; // need a loaded native window to test
     probedRef.current = true;
@@ -292,7 +298,7 @@ export function PlaybackTile({ cameraId, cameraName, className }: Props) {
       if (ok) markNativeOk(cameraId);
       else markNeedsH264(cameraId);
     });
-  }, [verdict, active, slots, videoRefs, cameraId, markNativeOk, markNeedsH264]);
+  }, [verdict, active, slots, videoRefs, cameraId, isPlaying, markNativeOk, markNeedsH264]);
   useEffect(() => () => probeCtrl.current?.abort(), []);
 
   // When the codec preference flips (native found unrenderable -> H.264), the

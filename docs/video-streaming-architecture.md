@@ -87,12 +87,27 @@ watches for proof of an actual decoded frame:
 1. `requestVideoFrameCallback` — fires only when a decoded frame hits the
    compositor. Definitive.
 2. If that API is absent, sample the `<canvas>` for any non-black pixel.
-3. An `error` event, or **nothing painted within ~6 s**, = failure (the
+3. Failure = **no frame painted within ~6 s of *playing* time**, or a genuine
+   `MEDIA_ERR_DECODE` / `MEDIA_ERR_SRC_NOT_SUPPORTED` error (the
    black-screen-with-no-error case).
 
+Two guards keep this from firing a **false** "needs H.264":
+
+- **Only judged while playing.** The ~6 s timer is armed on the `playing` event
+  and cleared on `pause`/`waiting`, so it measures *playing time without a painted
+  frame* — not wall-clock since the URL was assigned. A paused or buffering
+  `<video>` paints nothing; timing it out would wrongly demand a transcode.
+  Playback opens **paused** and every seek pauses, so the playback probe
+  (`PlaybackTile`) additionally waits for `isPlaying` before it even starts.
+- **Transient errors are ignored.** Only `MEDIA_ERR_DECODE` /
+  `MEDIA_ERR_SRC_NOT_SUPPORTED` count as a codec failure. A dropped fetch, a
+  reload, or a Range hiccup (`MEDIA_ERR_NETWORK` / `MEDIA_ERR_ABORTED`) leaves the
+  verdict **untested**, so we retry native next time rather than permanently
+  switching the camera to a server transcode.
+
 Capable devices confirm in well under a second; only a device that genuinely
-can't decode a stream eats the ~6 s before falling back (once, per camera, per
-session).
+can't decode a *playing* stream eats the ~6 s before falling back (once, per
+camera, per session).
 
 ---
 
