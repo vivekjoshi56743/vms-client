@@ -169,6 +169,25 @@ fn parse_range(value: &str) -> Option<(u64, Option<u64>)> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // On Linux the WebView is WebKitGTK over the *system* GStreamer registry.
+    // If that registry includes a broken NVIDIA hardware decoder (`nvv4l2decoder`
+    // and the nvcodec siblings), GStreamer auto-plugs it for H.265/H.264 because
+    // NVIDIA registers it at a higher rank than the software `avdec_*` — but it
+    // then fails caps negotiation inside WebKitGTK's MSE pipeline
+    // ("not-negotiated" / "Failed to push buffer"), so live video never decodes.
+    // Demote those elements to rank 0 so GStreamer falls back to the reliable
+    // software decoders. The bundled-GStreamer AppImage never sees these elements,
+    // which is exactly why it worked while the .deb didn't. Set before the WebView
+    // (and its GStreamer) start; child WebKit processes inherit this env. A user
+    // who needs their own ranking can still override via the environment.
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("GST_PLUGIN_FEATURE_RANK").is_none() {
+        std::env::set_var(
+            "GST_PLUGIN_FEATURE_RANK",
+            "nvv4l2decoder:0,nvh265dec:0,nvh264dec:0,nvh265sldec:0,nvh264sldec:0",
+        );
+    }
+
     // rustls 0.23 requires installing a crypto provider exactly once per
     // process before any TLS config is built.
     rustls::crypto::ring::default_provider()

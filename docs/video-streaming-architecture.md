@@ -43,8 +43,35 @@ WebRTC / MSE / HEVC simply don't exist. We fix that by **bundling GStreamer into
 the Linux AppImage** (`bundle.linux.appimage.bundleMediaFramework = true` +
 installing `gstreamer1.0-plugins-{base,good,bad,ugly}` + `gstreamer1.0-libav` on
 the CI builder). The AppImage then carries its own media stack and behaves like
-Windows/macOS regardless of the host distro. (`.deb`/`.rpm` don't embed it —
-they'd declare those as package dependencies instead.)
+Windows/macOS regardless of the host distro. The `.deb`/`.rpm` don't embed it —
+they declare those packages as dependencies instead
+(`bundle.linux.deb.depends`).
+
+### Linux: demote broken NVIDIA hardware decoders
+
+The `.deb` runs against the **system** GStreamer registry, not a bundled one — so
+it can see decoders the AppImage never does. On machines with NVIDIA's GStreamer
+plugins, `nvv4l2decoder` (and the `nvcodec` siblings `nvh265dec`/`nvh264dec`)
+register at a **higher rank** than the software `avdec_h265`/`avdec_h264`, so
+GStreamer auto-plugs them first. Inside WebKitGTK's MSE pipeline they **advertise**
+H.265/H.264 support but then **fail caps negotiation** (`not-negotiated` →
+`Failed to push buffer (code=5)`) → live video never decodes. This is why live
+worked in the AppImage (bundled software-only plugins) but black-screened in the
+`.deb` on the same machine.
+
+Fix: `run()` in **`src-tauri/src/lib.rs`** sets
+`GST_PLUGIN_FEATURE_RANK=nvv4l2decoder:0,nvh265dec:0,nvh264dec:0,…` on Linux
+(unless already set), before the WebView starts, so GStreamer falls back to the
+reliable software `avdec_*`. Child WebKit processes inherit it.
+
+### Live HLS buffer (software-decode stability)
+
+The hls.js live config in **`src/components/video/VideoPlayer.tsx`** keeps a few
+seconds of buffer (`liveSyncDuration: 3`, `maxBufferLength: 15`,
+`lowLatencyMode: false`) rather than an ultra-low-latency window. A too-tight
+window makes hls.js skip forward and drop frames; on a **software** decoder a
+dropped *reference* frame breaks the HEVC reference chain → **green frames +
+stutter** until the next keyframe. The small added latency buys a stable picture.
 
 ---
 
