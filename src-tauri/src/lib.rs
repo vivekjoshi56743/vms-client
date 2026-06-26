@@ -1,4 +1,5 @@
 mod events;
+mod live_mjpeg;
 mod secure_store;
 mod tofu;
 
@@ -196,6 +197,24 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        // Linux tolerant-live PoC: serve the latest self-decoded JPEG for a
+        // camera. The frontend canvas pulls `liveframe://localhost/{cameraId}`
+        // in a rAF loop (see LiveMjpegView.tsx + live_mjpeg.rs). Synchronous —
+        // the frame is already in memory, no I/O.
+        .register_asynchronous_uri_scheme_protocol("liveframe", |ctx, request, responder| {
+            let app = ctx.app_handle();
+            let camera_id = request.uri().path().trim_start_matches('/').to_string();
+            let resp = match app.state::<live_mjpeg::LiveMjpegState>().frame_for(&camera_id) {
+                Some(jpeg) => tauri::http::Response::builder()
+                    .status(200)
+                    .header("Content-Type", "image/jpeg")
+                    .header("Cache-Control", "no-store")
+                    .body(jpeg)
+                    .unwrap(),
+                None => err_resp(503, "no frame yet".to_string()),
+            };
+            responder.respond(resp);
+        })
         .register_asynchronous_uri_scheme_protocol("proxy", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -483,6 +502,7 @@ pub fn run() {
             app.manage(tofu_state);
             app.manage(events::EventStreamState::default());
             app.manage(PlaybackCache::default());
+            app.manage(live_mjpeg::LiveMjpegState::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -497,6 +517,8 @@ pub fn run() {
             secure_store::secure_delete,
             events::events_start,
             events::events_stop,
+            live_mjpeg::live_start,
+            live_mjpeg::live_stop,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

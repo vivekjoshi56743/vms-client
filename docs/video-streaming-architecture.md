@@ -73,6 +73,39 @@ window makes hls.js skip forward and drop frames; on a **software** decoder a
 dropped *reference* frame breaks the HEVC reference chain → **green frames +
 stutter** until the next keyframe. The small added latency buys a stable picture.
 
+### Linux: self-decode live to a canvas (PoC, bypasses MSE) — `useSelfDecode`
+
+Even with hardware decode, WebKitGTK's **MSE video sink** enforces strict A/V
+sync and **drops frames** on our cameras' irregular ~19.25 fps timestamps →
+persistent stutter. This was proven to be a *sink/timestamp* problem, not a
+decode one: it reproduces with software **and** NVDEC on an RTX 3090, and the
+sink itself logs *"A lot of buffers are being dropped … timestamping problem, or
+this computer is too slow."* VLC/mpv play the same stream smoothly because they
+don't drop frames to chase a clock.
+
+So **on Linux only** (`isTauri() && isLinux()`, picked in `VideoTile`), live
+video bypasses the WebView's media stack entirely:
+
+- **`src-tauri/src/live_mjpeg.rs`** spawns `gst-launch-1.0` per camera, decoding
+  the camera's **native** RTSP (`rtspsrc … ! decodebin ! … ! jpegenc ! fdsink`)
+  to a stream of JPEGs. `fdsink` never drops frames — that tolerance is the point.
+  A reader thread keeps only the latest complete JPEG (split on the `FF D8` SOI
+  marker, which JPEG byte-stuffing guarantees appears only at frame boundaries).
+- The **`liveframe://localhost/{cameraId}`** URI scheme serves that latest JPEG.
+- **`src/components/video/LiveMjpegView.tsx`** pulls it in a `requestAnimationFrame`
+  loop and paints a `<canvas>` — universal, no MSE/WebRTC/QoS.
+
+macOS (WKWebView) and Windows (WebView2) tolerate the stream, so they keep the
+native WHEP/HLS player and never hit this path. Notes:
+
+- Native RTSP only — GStreamer decodes HEVC fine, so there's **no codec verify /
+  H.264 fallback** here (that dance only exists to work around unreliable WebView
+  decoders we're no longer using).
+- `decodebin` inherits the `GST_PLUGIN_FEATURE_RANK` demotion from the parent
+  process, so it avoids the broken `nvv4l2decoder` too.
+- **Status: PoC.** Single-camera path wired end to end; productionizing (per-tile
+  fps/resolution caps, HW JPEG via `nvjpegenc`, grid lifecycle) is follow-up.
+
 ---
 
 ## 3. Everything talks to the backend through Rust
