@@ -17,8 +17,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
-            args: '--target universal-apple-darwin'
+          # macOS is built locally via `npm run tauri build -- --target universal-apple-darwin`
+          # to avoid the 10x GitHub-hosted macOS minute cost. Upload the .dmg to the
+          # Release manually. Uncomment to restore CI macOS builds.
+          # - platform: macos-latest
+          #   args: '--target universal-apple-darwin'
           - platform: windows-latest
             args: ''
           - platform: ubuntu-22.04
