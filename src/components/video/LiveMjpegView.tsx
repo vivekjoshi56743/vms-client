@@ -1,13 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/cn";
 import { useMjpegToken } from "@/hooks/useMjpegToken";
 import { fetchMjpegFrame } from "@/api/mjpeg";
 import type { PlayerState } from "@/components/video/VideoPlayer";
 
-// Poll a little above the 5 fps the backend produces, so we never miss a frame
-// but don't hammer the Rust IPC re-fetching identical ones.
 const POLL_INTERVAL_MS = 150;
+
+// TEMPORARY: on-screen diagnostic overlay so we can see, on the grey-tile box,
+// exactly which step fails (no DevTools needed). Remove once the Linux render
+// issue is pinned down.
+const DEBUG_OVERLAY = true;
 
 interface Props {
   cameraId: string;
@@ -15,35 +18,38 @@ interface Props {
   className?: string;
 }
 
-// Linux live path. The backend (Go + ffmpeg) decodes the camera to JPEG; we pull
-// one frame at a time through the Rust pinned-TLS proxy and display it.
-//
-// We render into an <img> (object-URL swapped per frame), NOT a <canvas>: the
-// accelerated 2D-canvas path fails to composite on the proprietary NVIDIA driver
-// (RTX 3090 box → grey tile), while plain <img> image rendering doesn't use that
-// path and works on every WebKitGTK/GPU combo. Image decode (JPEG) is the one
-// primitive present in every WebView. macOS/Windows never mount this (they keep
-// VideoPlayer). See docs/video-streaming-architecture.md §6.1.
-export function LiveMjpegView({ cameraId, onStateChange, className }: Props) {
-  const { data, refetch } = useMjpegToken(cameraId);
+interface Diag {
+  status: string;   // last HTTP status of the frame fetch (or error text)
+  bytes: number;    // size of the last frame blob
+  type: string;     // MIME type of the last frame blob (should be image/jpeg)
+  fetched: number;  // successful frame fetches
+  loaded: number;   // <img> onload fires (decoded + ready to paint)
+  imgErr: number;   // <img> onerror fires (couldn't decode the blob)
+  err: string;      // last fetch/exception message
+}
 
-  // The current frame URL (carries the token); updated as the token re-mints.
-  // Held in a ref so the poll loop always reads the latest without restarting.
+// Linux live path. Backend (Go + ffmpeg) decodes the camera to JPEG; we pull one
+// frame at a time through the Rust pinned-TLS proxy and show it in an <img>.
+// See docs/video-streaming-architecture.md §6.1.
+export function LiveMjpegView({ cameraId, onStateChange, className }: Props) {
+  const { data, refetch, error: tokErr, isLoading: tokLoading } = useMjpegToken(cameraId);
+
   const frameUrlRef = useRef<string | null>(null);
   frameUrlRef.current = data?.frameUrl ?? null;
 
-  // onStateChange is a fresh closure each render; keep it in a ref so it isn't
-  // an effect dependency (which would restart the poll loop every render).
   const onStateChangeRef = useRef(onStateChange);
   onStateChangeRef.current = onStateChange;
 
   const imgRef = useRef<HTMLImageElement>(null);
+  const [diag, setDiag] = useState<Diag>({
+    status: "…", bytes: 0, type: "", fetched: 0, loaded: 0, imgErr: 0, err: "",
+  });
 
   useEffect(() => {
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let painted = false;
-    let objUrl: string | null = null; // current <img> src; revoked when replaced
+    let objUrl: string | null = null;
 
     onStateChangeRef.current?.("connecting");
 
@@ -54,25 +60,34 @@ export function LiveMjpegView({ cameraId, onStateChange, className }: Props) {
         try {
           const r = await fetchMjpegFrame(url);
           if (r.ok) {
+            const blob = r.blob;
             const img = imgRef.current;
             if (img) {
-              const next = URL.createObjectURL(r.blob);
+              const next = URL.createObjectURL(blob);
               const prev = objUrl;
               objUrl = next;
               img.src = next;
-              // The old URL already loaded; free it now that the new one is set.
               if (prev) URL.revokeObjectURL(prev);
               if (!painted) {
                 painted = true;
                 onStateChangeRef.current?.("playing");
               }
             }
-          } else if (r.status === 401) {
-            refetch(); // token expired → re-mint
+            if (DEBUG_OVERLAY) {
+              setDiag((d) => ({
+                ...d, status: "200", bytes: blob.size,
+                type: blob.type || "(none)", fetched: d.fetched + 1, err: "",
+              }));
+            }
+          } else {
+            if (DEBUG_OVERLAY) setDiag((d) => ({ ...d, status: String(r.status) }));
+            if (r.status === 401) refetch();
           }
-          // 503 (transcode warming) and other transient errors: just retry.
-        } catch {
-          // decode/network hiccup — retry next tick
+        } catch (e) {
+          if (DEBUG_OVERLAY) {
+            const msg = e instanceof Error ? e.message : String(e);
+            setDiag((d) => ({ ...d, err: msg }));
+          }
         }
       }
       if (!stopped) timer = setTimeout(tick, POLL_INTERVAL_MS);
@@ -86,11 +101,28 @@ export function LiveMjpegView({ cameraId, onStateChange, className }: Props) {
     };
   }, [cameraId, refetch]);
 
+  const tokenStatus = tokLoading ? "minting" : tokErr ? "ERR" : data?.frameUrl ? "ok" : "none";
+  let host = "?";
+  try { host = data?.frameUrl ? new URL(data.frameUrl).host : "?"; } catch { /* ignore */ }
+
   return (
-    <img
-      ref={imgRef}
-      alt=""
-      className={cn("h-full w-full bg-black object-contain", className)}
-    />
+    <div className={cn("relative h-full w-full bg-black", className)}>
+      <img
+        ref={imgRef}
+        alt=""
+        className="h-full w-full object-contain"
+        onLoad={() => DEBUG_OVERLAY && setDiag((d) => ({ ...d, loaded: d.loaded + 1 }))}
+        onError={() => DEBUG_OVERLAY && setDiag((d) => ({ ...d, imgErr: d.imgErr + 1 }))}
+      />
+      {DEBUG_OVERLAY && (
+        <div className="absolute left-1 top-1 z-10 max-w-full bg-black/75 px-1.5 py-1 font-mono text-[10px] leading-tight text-green-400">
+          <div>host:{host}</div>
+          <div>tok:{tokenStatus} get:{diag.status}</div>
+          <div>fetch:{diag.fetched} load:{diag.loaded} imgErr:{diag.imgErr}</div>
+          <div>bytes:{diag.bytes} type:{diag.type || "-"}</div>
+          {diag.err && <div className="text-red-400">err:{diag.err.slice(0, 60)}</div>}
+        </div>
+      )}
+    </div>
   );
 }
