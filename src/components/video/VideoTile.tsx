@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { Maximize2 } from "lucide-react";
 
 import { cn } from "@/lib/cn";
+import { isTauri } from "@/lib/fingerprint";
+import { isLinux } from "@/lib/platform";
 import { VideoPlayer, type PlayerState } from "@/components/video/VideoPlayer";
+import { LiveMjpegView } from "@/components/video/LiveMjpegView";
 import { useLiveCodecStore } from "@/stores/liveCodec";
 import type { Camera } from "@/api/cameras";
 import type { CameraHealth } from "@/api/health";
@@ -87,6 +90,12 @@ export function VideoTile({ camera, url, hlsFallback, health, onStateChange, cla
   const verifyNative = verdict === undefined;
   const skipWhep = verdict !== "h264" && whepUnsupported;
 
+  // Linux/WebKitGTK can't reliably play the native stream (WebRTC has no H.265;
+  // HLS/MSE stutters on the cameras' irregular timestamps). There we render the
+  // backend's MJPEG to a canvas instead — JPEG decode works on every WebView.
+  // macOS (WKWebView) and Windows (WebView2) keep the native player below.
+  const useMjpeg = isTauri() && isLinux();
+
   // The codec actually being played, reported by the player (HLS reads it from
   // the manifest; WHEP is always H.264 here). Shown in the tile chrome.
   const [codec, setCodec] = useState<string | null>(null);
@@ -111,21 +120,29 @@ export function VideoTile({ camera, url, hlsFallback, health, onStateChange, cla
       )}
       style={style}
     >
-      <VideoPlayer
-        url={url}
-        hlsFallback={hlsFallback}
-        className="h-full w-full"
-        onStateChange={handleStateChange}
-        muted
-        skipWhep={skipWhep}
-        onCodec={setCodec}
-        onWhepUnsupported={() => markWhepUnsupported(camera.id)}
-        onRenderVerified={
-          verifyNative
-            ? (ok) => (ok ? markNativeOk(camera.id) : markNeedsH264(camera.id))
-            : undefined
-        }
-      />
+      {useMjpeg ? (
+        <LiveMjpegView
+          cameraId={camera.id}
+          onStateChange={handleStateChange}
+          className="h-full w-full"
+        />
+      ) : (
+        <VideoPlayer
+          url={url}
+          hlsFallback={hlsFallback}
+          className="h-full w-full"
+          onStateChange={handleStateChange}
+          muted
+          skipWhep={skipWhep}
+          onCodec={setCodec}
+          onWhepUnsupported={() => markWhepUnsupported(camera.id)}
+          onRenderVerified={
+            verifyNative
+              ? (ok) => (ok ? markNativeOk(camera.id) : markNeedsH264(camera.id))
+              : undefined
+          }
+        />
+      )}
 
       {/* Chrome — shown while playing */}
       {isPlaying && (

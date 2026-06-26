@@ -1,6 +1,6 @@
 # Video Streaming Architecture — How Live & Playback Work Now
 
-> **Current as of commit:** `b49d70f` — bump this (and this doc) in the same
+> **Current as of commit:** `e561dea` — bump this (and this doc) in the same
 > commit whenever the video codec/transcode/routing behavior changes (CLAUDE.md
 > Rule 9).
 >
@@ -137,6 +137,37 @@ transcoding** — just a 4-letter rename so the WebView accepts the stream.
 When a camera flips to `h264`, its query key changes, so `useStreams` refetches
 the H.264 URLs (`hls_h264` / `webrtc_h264`) and the tile re-renders onto them —
 H.264 even works over WHEP, so those cameras regain low latency.
+
+### 6.1 Linux desktop: backend MJPEG to a canvas (replaces the above on Linux)
+
+The native flow above is what **macOS (WKWebView) and Windows (WebView2)** use —
+and they're untouched. But **WebKitGTK (the Linux desktop WebView) can't play it
+reliably**: WebRTC has no H.265, and HLS/MSE drops frames on the cameras'
+irregular ~19.25 fps timestamps (proven sink/timestamp issue, not decode — it
+reproduces even with NVDEC). So on Linux the live tile bypasses the WebView's
+media stack entirely and renders the **backend's MJPEG**:
+
+- `VideoTile` picks the path with `useMjpeg = isTauri() && isLinux()`
+  (`src/lib/platform.ts`). True → render `LiveMjpegView` instead of `VideoPlayer`.
+  No WHEP/HLS/MSE/codec-verify on this path.
+- The backend transcodes the camera to JPEG (HW decode → CPU `mjpeg` @5fps, one
+  **shared** ffmpeg per camera) behind a short-lived, camera-scoped signed token.
+- `useMjpegToken` (`POST …/mjpeg/token`, bearer-authed) mints the token and
+  auto-re-mints at ~0.75× its TTL; `LiveMjpegView` polls the **single-frame**
+  endpoint `GET …/mjpeg/frame?token=…` (`src/api/mjpeg.ts`) at ~6.7 fps **through
+  the Rust pinned-TLS proxy** (`tauriFetch` → `tofu_http_request`), then
+  `createImageBitmap` → `<canvas>`. 503 = transcode warming (retry); 401 = re-mint.
+- **Why the single-frame poll, not the multipart stream:** the WebView can't
+  reach the self-signed backend directly (mixed content), so it must go through
+  Rust — and the Rust proxy buffers whole responses, which an *infinite* multipart
+  stream breaks. A finite per-frame response carries cleanly. (Plain browsers use
+  the multipart `…/mjpeg` stream via `<img>`; the desktop app does not.)
+- **Zero new client dependency:** the only thing the WebView decodes is JPEG
+  (universal). No GStreamer / gst-launch on the client — all decode is on the Go
+  backend. The `.deb`/AppImage need nothing extra for Linux live.
+
+The line 133 "Linux + GStreamer → native HLS-HEVC (confirmed)" above applies to a
+plain in-page browser; the **packaged Linux app uses 6.1 instead.**
 
 ---
 
