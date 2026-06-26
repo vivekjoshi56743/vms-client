@@ -446,6 +446,172 @@
                 }
             }
         },
+        "/api/cameras/{id}/mjpeg": {
+            "get": {
+                "description": "Continuous multipart/x-mixed-replace JPEG stream for a plain browser \u003cimg src\u003e. One shared, hardware-decoded transcode per camera is fanned out to all viewers and torn down when nobody is watching. Authenticate with a token from POST /mjpeg/token (query parameter, not header).",
+                "produces": [
+                    "image/jpeg"
+                ],
+                "tags": [
+                    "streaming"
+                ],
+                "summary": "Live MJPEG stream",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Stream token from POST /mjpeg/token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "multipart/x-mixed-replace JPEG stream",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "501": {
+                        "description": "ffmpeg not installed",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "too many concurrent transcodes",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cameras/{id}/mjpeg/frame": {
+            "get": {
+                "description": "Returns the current JPEG frame from the shared transcode and closes — a finite response that traverses buffering proxies (e.g. a desktop app's request proxy) which can't carry the infinite multipart stream. Poll it (~5×/sec) for live video, or use it for a thumbnail. Treat 503 as \"retry next poll\" while the stream warms up. Authenticate with a token from POST /mjpeg/token.",
+                "produces": [
+                    "image/jpeg"
+                ],
+                "tags": [
+                    "streaming"
+                ],
+                "summary": "Single MJPEG frame (snapshot)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Stream token from POST /mjpeg/token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "image/jpeg",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "501": {
+                        "description": "ffmpeg not installed",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "frame not ready yet — retry",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/cameras/{id}/mjpeg/token": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns short-lived, signed URLs for the MJPEG endpoints. Because an \u003cimg\u003e tag can't send an Authorization header, the MJPEG stream/frame endpoints authenticate via a ?token= query parameter instead. Mint a token here (Bearer-authenticated), then point an \u003cimg\u003e at the returned stream URL, or poll the frame URL. Re-mint before expires_in elapses (and on any 401).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "streaming"
+                ],
+                "summary": "Mint an MJPEG stream token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Camera ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.MJPEGToken"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/apitypes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/cameras/{id}/playback": {
             "get": {
                 "security": [
@@ -1445,6 +1611,26 @@
                 "token": {
                     "type": "string",
                     "example": "a3f5c8d1e2b4..."
+                }
+            }
+        },
+        "apitypes.MJPEGToken": {
+            "type": "object",
+            "properties": {
+                "expires_in": {
+                    "description": "ExpiresIn is the token lifetime in seconds. Re-mint before it elapses (and\non any 401) to keep streaming.",
+                    "type": "integer",
+                    "example": 300
+                },
+                "frame": {
+                    "description": "Frame is the single-JPEG snapshot URL — poll it (~5×/sec) from clients that\ncan't consume an infinite stream (e.g. a desktop app behind a finite proxy).",
+                    "type": "string",
+                    "example": "/api/cameras/b0b392.../mjpeg/frame?token=eyJ...abc"
+                },
+                "stream": {
+                    "description": "Stream is the continuous multipart/x-mixed-replace URL for a browser \u003cimg\u003e.",
+                    "type": "string",
+                    "example": "/api/cameras/b0b392.../mjpeg?token=eyJ...abc"
                 }
             }
         },
