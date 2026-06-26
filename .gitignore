@@ -32,3 +32,6 @@ docs/openapi.json
 
 # Mockup reference (visual spec). Kept locally as inspiration, never shipped.
 supervision-product-main/
+
+# Local Linux build artifacts (scripts/build-linux.sh)
+dist-linux
