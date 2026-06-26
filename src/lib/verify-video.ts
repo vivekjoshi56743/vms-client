@@ -34,26 +34,16 @@ export function verifyVideoRenders(
     let settled = false;
     let vfcId: number | undefined;
     let pollId: ReturnType<typeof setTimeout> | undefined;
-    // The black-screen failure timer. Armed ONLY while the video is actively
-    // playing — a paused / buffering / not-yet-started video legitimately paints
-    // nothing, and counting that as a decode failure was the bug this guards
-    // against (playback opens paused; every seek pauses). Re-armed on `playing`,
-    // cleared on `pause`/`waiting`, so the timeout measures *playing* time spent
-    // without a painted frame, not wall-clock since the URL was assigned.
-    let failTimer: ReturnType<typeof setTimeout> | undefined;
 
     const finish = (rendered: boolean) => {
       if (settled) return;
       settled = true;
-      if (failTimer) clearTimeout(failTimer);
+      clearTimeout(timer);
       if (pollId) clearTimeout(pollId);
       if (vfcId != null && typeof vfc.cancelVideoFrameCallback === "function") {
         vfc.cancelVideoFrameCallback(vfcId);
       }
       el.removeEventListener("error", onError);
-      el.removeEventListener("playing", armFailTimer);
-      el.removeEventListener("pause", disarmFailTimer);
-      el.removeEventListener("waiting", disarmFailTimer);
       opts.signal?.removeEventListener("abort", onAbort);
       resolve(rendered);
     };
@@ -61,8 +51,10 @@ export function verifyVideoRenders(
     // 1) Definitive positive: a decoded frame reached the compositor.
     if (hasRVFC) {
       vfcId = vfc.requestVideoFrameCallback!(() => finish(true));
-    } else {
-      // 2) Fallback positive (no rVFC): sample pixels for real content.
+    }
+
+    // 2) Fallback positive (no rVFC): sample pixels for real content.
+    if (!hasRVFC) {
       const canvas = document.createElement("canvas");
       canvas.width = 32;
       canvas.height = 18;
@@ -89,38 +81,12 @@ export function verifyVideoRenders(
       sample();
     }
 
-    // 3) Failure timer — only counts down while the video is genuinely playing.
-    const armFailTimer = () => {
-      if (settled || failTimer != null) return;
-      failTimer = setTimeout(() => finish(false), timeoutMs);
-    };
-    const disarmFailTimer = () => {
-      if (failTimer != null) {
-        clearTimeout(failTimer);
-        failTimer = undefined;
-      }
-    };
-    el.addEventListener("playing", armFailTimer);
-    el.addEventListener("pause", disarmFailTimer);
-    el.addEventListener("waiting", disarmFailTimer);
-    // Already playing when we attached (e.g. autoplaying live HLS)? Start now.
-    if (!el.paused && !el.ended && el.readyState >= 2) armFailTimer();
+    // 3) Hard failure.
+    const onError = () => finish(false);
+    el.addEventListener("error", onError, { once: true });
 
-    // 4) Errors: only a genuine DECODE / unsupported-format error proves this
-    // codec can't render here. Transient NETWORK / ABORTED errors (a dropped
-    // fetch, a reload, a Range hiccup) must NOT be misread as a codec failure —
-    // ignore them and leave the verdict untested so we retry native next time
-    // rather than permanently switching the camera to a server transcode.
-    const onError = () => {
-      const code = el.error?.code;
-      if (
-        code === MediaError.MEDIA_ERR_DECODE ||
-        code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
-      ) {
-        finish(false);
-      }
-    };
-    el.addEventListener("error", onError);
+    // 4) Nothing painted in time => treat as a black-screen decode failure.
+    const timer = setTimeout(() => finish(false), timeoutMs);
 
     // External cancel (component unmount / window change): stop, verdict unused.
     const onAbort = () => finish(false);

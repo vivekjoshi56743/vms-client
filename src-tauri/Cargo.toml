@@ -1,6 +1,6 @@
 [package]
 name = "supervision-client"
-version = "0.3.1"
+version = "0.1.0"
 description = "Supervision — desktop client for the Supervision VMS"
 authors = ["Bipolar Factory"]
 edition = "2021"

@@ -391,19 +391,13 @@ function HlsPlayer({
       if (cancelled || !videoRef.current) return;
       hls = new Hls({
         enableWorker: true,
-        // Live tuning. The previous ultra-low-latency window (stay 1s behind the
-        // edge, 4s buffer, lowLatencyMode) made hls.js skip forward and drop
-        // frames to keep up — and on a software decoder (Linux/WebKitGTK, and the
-        // AppImage) a dropped *reference* frame breaks the HEVC reference chain,
-        // producing GREEN frames + stutter until the next keyframe ("Could not
-        // find ref with POC" in the GStreamer log). A few seconds of buffer keeps
-        // the decoder's reference chain intact; the small latency cost is a fine
-        // trade for a stable picture in a VMS live view.
-        lowLatencyMode: false,
-        liveSyncDuration: 3,
-        liveMaxLatencyDuration: 12,
-        maxBufferLength: 15,
-        backBufferLength: 10,
+        lowLatencyMode: true,
+        // Minimise live latency: stay 1 segment behind live edge, skip forward
+        // if we fall more than 4 s behind, cap the buffer to 4 s.
+        liveSyncDuration: 1,
+        liveMaxLatencyDuration: 4,
+        maxBufferLength: 4,
+        backBufferLength: 4,
         // In the packaged app the WebView can't fetch the manifest/segments
         // directly (mixed content + self-signed TLS), so route them through
         // the Rust shim. In a plain browser, keep hls.js's default loader.

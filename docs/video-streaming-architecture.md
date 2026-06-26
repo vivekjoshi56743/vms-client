@@ -1,6 +1,6 @@
 # Video Streaming Architecture — How Live & Playback Work Now
 
-> **Current as of commit:** `d32987b` — bump this (and this doc) in the same
+> **Current as of commit:** `b49d70f` — bump this (and this doc) in the same
 > commit whenever the video codec/transcode/routing behavior changes (CLAUDE.md
 > Rule 9).
 >
@@ -43,68 +43,8 @@ WebRTC / MSE / HEVC simply don't exist. We fix that by **bundling GStreamer into
 the Linux AppImage** (`bundle.linux.appimage.bundleMediaFramework = true` +
 installing `gstreamer1.0-plugins-{base,good,bad,ugly}` + `gstreamer1.0-libav` on
 the CI builder). The AppImage then carries its own media stack and behaves like
-Windows/macOS regardless of the host distro. The `.deb`/`.rpm` don't embed it —
-they declare those packages as dependencies instead
-(`bundle.linux.deb.depends`).
-
-### Linux: demote broken NVIDIA hardware decoders
-
-The `.deb` runs against the **system** GStreamer registry, not a bundled one — so
-it can see decoders the AppImage never does. On machines with NVIDIA's GStreamer
-plugins, `nvv4l2decoder` (and the `nvcodec` siblings `nvh265dec`/`nvh264dec`)
-register at a **higher rank** than the software `avdec_h265`/`avdec_h264`, so
-GStreamer auto-plugs them first. Inside WebKitGTK's MSE pipeline they **advertise**
-H.265/H.264 support but then **fail caps negotiation** (`not-negotiated` →
-`Failed to push buffer (code=5)`) → live video never decodes. This is why live
-worked in the AppImage (bundled software-only plugins) but black-screened in the
-`.deb` on the same machine.
-
-Fix: `run()` in **`src-tauri/src/lib.rs`** sets
-`GST_PLUGIN_FEATURE_RANK=nvv4l2decoder:0,nvh265dec:0,nvh264dec:0,…` on Linux
-(unless already set), before the WebView starts, so GStreamer falls back to the
-reliable software `avdec_*`. Child WebKit processes inherit it.
-
-### Live HLS buffer (software-decode stability)
-
-The hls.js live config in **`src/components/video/VideoPlayer.tsx`** keeps a few
-seconds of buffer (`liveSyncDuration: 3`, `maxBufferLength: 15`,
-`lowLatencyMode: false`) rather than an ultra-low-latency window. A too-tight
-window makes hls.js skip forward and drop frames; on a **software** decoder a
-dropped *reference* frame breaks the HEVC reference chain → **green frames +
-stutter** until the next keyframe. The small added latency buys a stable picture.
-
-### Linux: self-decode live to a canvas (PoC, bypasses MSE) — `useSelfDecode`
-
-Even with hardware decode, WebKitGTK's **MSE video sink** enforces strict A/V
-sync and **drops frames** on our cameras' irregular ~19.25 fps timestamps →
-persistent stutter. This was proven to be a *sink/timestamp* problem, not a
-decode one: it reproduces with software **and** NVDEC on an RTX 3090, and the
-sink itself logs *"A lot of buffers are being dropped … timestamping problem, or
-this computer is too slow."* VLC/mpv play the same stream smoothly because they
-don't drop frames to chase a clock.
-
-So **on Linux only** (`isTauri() && isLinux()`, picked in `VideoTile`), live
-video bypasses the WebView's media stack entirely:
-
-- **`src-tauri/src/live_mjpeg.rs`** spawns `gst-launch-1.0` per camera, decoding
-  the camera's **native** RTSP (`rtspsrc … ! decodebin ! … ! jpegenc ! fdsink`)
-  to a stream of JPEGs. `fdsink` never drops frames — that tolerance is the point.
-  A reader thread keeps only the latest complete JPEG (split on the `FF D8` SOI
-  marker, which JPEG byte-stuffing guarantees appears only at frame boundaries).
-- The **`liveframe://localhost/{cameraId}`** URI scheme serves that latest JPEG.
-- **`src/components/video/LiveMjpegView.tsx`** pulls it in a `requestAnimationFrame`
-  loop and paints a `<canvas>` — universal, no MSE/WebRTC/QoS.
-
-macOS (WKWebView) and Windows (WebView2) tolerate the stream, so they keep the
-native WHEP/HLS player and never hit this path. Notes:
-
-- Native RTSP only — GStreamer decodes HEVC fine, so there's **no codec verify /
-  H.264 fallback** here (that dance only exists to work around unreliable WebView
-  decoders we're no longer using).
-- `decodebin` inherits the `GST_PLUGIN_FEATURE_RANK` demotion from the parent
-  process, so it avoids the broken `nvv4l2decoder` too.
-- **Status: PoC.** Single-camera path wired end to end; productionizing (per-tile
-  fps/resolution caps, HW JPEG via `nvjpegenc`, grid lifecycle) is follow-up.
+Windows/macOS regardless of the host distro. (`.deb`/`.rpm` don't embed it —
+they'd declare those as package dependencies instead.)
 
 ---
 
@@ -147,27 +87,12 @@ watches for proof of an actual decoded frame:
 1. `requestVideoFrameCallback` — fires only when a decoded frame hits the
    compositor. Definitive.
 2. If that API is absent, sample the `<canvas>` for any non-black pixel.
-3. Failure = **no frame painted within ~6 s of *playing* time**, or a genuine
-   `MEDIA_ERR_DECODE` / `MEDIA_ERR_SRC_NOT_SUPPORTED` error (the
+3. An `error` event, or **nothing painted within ~6 s**, = failure (the
    black-screen-with-no-error case).
 
-Two guards keep this from firing a **false** "needs H.264":
-
-- **Only judged while playing.** The ~6 s timer is armed on the `playing` event
-  and cleared on `pause`/`waiting`, so it measures *playing time without a painted
-  frame* — not wall-clock since the URL was assigned. A paused or buffering
-  `<video>` paints nothing; timing it out would wrongly demand a transcode.
-  Playback opens **paused** and every seek pauses, so the playback probe
-  (`PlaybackTile`) additionally waits for `isPlaying` before it even starts.
-- **Transient errors are ignored.** Only `MEDIA_ERR_DECODE` /
-  `MEDIA_ERR_SRC_NOT_SUPPORTED` count as a codec failure. A dropped fetch, a
-  reload, or a Range hiccup (`MEDIA_ERR_NETWORK` / `MEDIA_ERR_ABORTED`) leaves the
-  verdict **untested**, so we retry native next time rather than permanently
-  switching the camera to a server transcode.
-
 Capable devices confirm in well under a second; only a device that genuinely
-can't decode a *playing* stream eats the ~6 s before falling back (once, per
-camera, per session).
+can't decode a stream eats the ~6 s before falling back (once, per camera, per
+session).
 
 ---
 
