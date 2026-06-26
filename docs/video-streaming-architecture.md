@@ -1,6 +1,6 @@
 # Video Streaming Architecture — How Live & Playback Work Now
 
-> **Current as of commit:** `e561dea` — bump this (and this doc) in the same
+> **Current as of commit:** `d553d30` — bump this (and this doc) in the same
 > commit whenever the video codec/transcode/routing behavior changes (CLAUDE.md
 > Rule 9).
 >
@@ -138,7 +138,7 @@ When a camera flips to `h264`, its query key changes, so `useStreams` refetches
 the H.264 URLs (`hls_h264` / `webrtc_h264`) and the tile re-renders onto them —
 H.264 even works over WHEP, so those cameras regain low latency.
 
-### 6.1 Linux desktop: backend MJPEG to a canvas (replaces the above on Linux)
+### 6.1 Linux desktop: backend MJPEG to an `<img>` (replaces the above on Linux)
 
 The native flow above is what **macOS (WKWebView) and Windows (WebView2)** use —
 and they're untouched. But **WebKitGTK (the Linux desktop WebView) can't play it
@@ -155,8 +155,14 @@ media stack entirely and renders the **backend's MJPEG**:
 - `useMjpegToken` (`POST …/mjpeg/token`, bearer-authed) mints the token and
   auto-re-mints at ~0.75× its TTL; `LiveMjpegView` polls the **single-frame**
   endpoint `GET …/mjpeg/frame?token=…` (`src/api/mjpeg.ts`) at ~6.7 fps **through
-  the Rust pinned-TLS proxy** (`tauriFetch` → `tofu_http_request`), then
-  `createImageBitmap` → `<canvas>`. 503 = transcode warming (retry); 401 = re-mint.
+  the Rust pinned-TLS proxy** (`tauriFetch` → `tofu_http_request`), then swaps the
+  bytes into an **`<img>`** via an object URL. 503 = transcode warming (retry);
+  401 = re-mint.
+- **`<img>`, not `<canvas>`:** the accelerated 2D-canvas path fails to composite
+  on the **proprietary NVIDIA driver** (RTX 3090 → grey tile; the older nouveau/
+  Mesa box was fine) and `WEBKIT_DISABLE_DMABUF_RENDERER` / `…_COMPOSITING_MODE`
+  didn't help. Plain `<img>` image rendering doesn't use the canvas GPU path, so
+  it works across every GPU/driver.
 - **Why the single-frame poll, not the multipart stream:** the WebView can't
   reach the self-signed backend directly (mixed content), so it must go through
   Rust — and the Rust proxy buffers whole responses, which an *infinite* multipart

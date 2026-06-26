@@ -16,10 +16,14 @@ interface Props {
 }
 
 // Linux live path. The backend (Go + ffmpeg) decodes the camera to JPEG; we pull
-// one frame at a time through the Rust pinned-TLS proxy and paint a <canvas>.
-// No MSE, no WebRTC, no codecs in the WebView — only JPEG decode, which every
-// WebKitGTK build supports. macOS/Windows never mount this (they keep VideoPlayer).
-// See docs/video-streaming-architecture.md.
+// one frame at a time through the Rust pinned-TLS proxy and display it.
+//
+// We render into an <img> (object-URL swapped per frame), NOT a <canvas>: the
+// accelerated 2D-canvas path fails to composite on the proprietary NVIDIA driver
+// (RTX 3090 box → grey tile), while plain <img> image rendering doesn't use that
+// path and works on every WebKitGTK/GPU combo. Image decode (JPEG) is the one
+// primitive present in every WebView. macOS/Windows never mount this (they keep
+// VideoPlayer). See docs/video-streaming-architecture.md §6.1.
 export function LiveMjpegView({ cameraId, onStateChange, className }: Props) {
   const { data, refetch } = useMjpegToken(cameraId);
 
@@ -33,15 +37,15 @@ export function LiveMjpegView({ cameraId, onStateChange, className }: Props) {
   const onStateChangeRef = useRef(onStateChange);
   onStateChangeRef.current = onStateChange;
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let painted = false;
+    let objUrl: string | null = null; // current <img> src; revoked when replaced
 
     onStateChangeRef.current?.("connecting");
-    const ctx = canvasRef.current?.getContext("2d") ?? null;
 
     const tick = async () => {
       if (stopped) return;
@@ -50,18 +54,19 @@ export function LiveMjpegView({ cameraId, onStateChange, className }: Props) {
         try {
           const r = await fetchMjpegFrame(url);
           if (r.ok) {
-            const bmp = await createImageBitmap(r.blob);
-            const canvas = canvasRef.current;
-            if (ctx && canvas) {
-              if (canvas.width !== bmp.width) canvas.width = bmp.width;
-              if (canvas.height !== bmp.height) canvas.height = bmp.height;
-              ctx.drawImage(bmp, 0, 0);
+            const img = imgRef.current;
+            if (img) {
+              const next = URL.createObjectURL(r.blob);
+              const prev = objUrl;
+              objUrl = next;
+              img.src = next;
+              // The old URL already loaded; free it now that the new one is set.
+              if (prev) URL.revokeObjectURL(prev);
               if (!painted) {
                 painted = true;
                 onStateChangeRef.current?.("playing");
               }
             }
-            bmp.close();
           } else if (r.status === 401) {
             refetch(); // token expired → re-mint
           }
@@ -77,12 +82,14 @@ export function LiveMjpegView({ cameraId, onStateChange, className }: Props) {
     return () => {
       stopped = true;
       if (timer) clearTimeout(timer);
+      if (objUrl) URL.revokeObjectURL(objUrl);
     };
   }, [cameraId, refetch]);
 
   return (
-    <canvas
-      ref={canvasRef}
+    <img
+      ref={imgRef}
+      alt=""
       className={cn("h-full w-full bg-black object-contain", className)}
     />
   );
